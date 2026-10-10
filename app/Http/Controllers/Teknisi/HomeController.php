@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Http\Controllers\Teknisi;
+
+use App\Http\Controllers\Controller;
+use App\Models\MaintenanceSchedule;
+use App\Models\Ticket;
+
+/** Dashboard teknisi: ringkasan kerja pribadi. */
+class HomeController extends Controller
+{
+    public function index()
+    {
+        $u = auth()->user();
+        $mine = Ticket::where('technician_id', $u->id);
+
+        $stats = [
+            'baru'      => (clone $mine)->whereIn('status', ['ditugaskan', 'dilaporkan'])->count(),
+            'proses'    => (clone $mine)->where('status', 'diproses')->count(),
+            'selesai'   => (clone $mine)->where('status', 'selesai')->whereMonth('finished_at', now()->month)->count(),
+            'terlambat' => (clone $mine)->where('status', '!=', 'selesai')->whereNotNull('due_at')->where('due_at', '<', now())->count(),
+        ];
+
+        // tugas prioritas: urgensi tinggi & batas waktu terdekat
+        $priority = Ticket::with('machine')->where('technician_id', $u->id)->where('status', '!=', 'selesai')
+            ->orderByRaw("case urgency when 'tinggi' then 0 when 'sedang' then 1 else 2 end")
+            ->orderBy('due_at')->take(3)->get();
+
+        $schedules = MaintenanceSchedule::with('machine')->where('technician_id', $u->id)
+            ->where('status', '!=', 'selesai')->orderBy('due_date')->take(4)->get();
+
+        $recent = Ticket::with('machine')->where('technician_id', $u->id)->where('status', 'selesai')
+            ->latest('finished_at')->take(3)->get();
+
+        // pengingat sesuai aturan notifikasi: H-7, H-1, hari-H, terlambat
+        $reminders = $schedules->map(function ($s) {
+            $d = (int) now()->startOfDay()->diffInDays($s->due_date, false);
+            $tag = match (true) {
+                $d < 0 => ['Terlambat '.abs($d).' hari', 'late'],
+                $d === 0 => ['Hari ini', 'today'],
+                $d <= 1 => ['H-1', 'soon'],
+                $d <= 7 => ['H-'.$d, 'soon'],
+                default => null,
+            };
+            return $tag ? ['s' => $s, 'label' => $tag[0], 'tone' => $tag[1]] : null;
+        })->filter()->values();
+
+        // jumlah selesai 7 hari terakhir untuk mini-chart
+        $week = collect(range(6, 0))->map(fn ($i) => [
+            'd' => now()->subDays($i)->translatedFormat('D'),
+            'n' => Ticket::where('technician_id', $u->id)->whereDate('finished_at', now()->subDays($i))->count(),
+        ]);
+
+        return view('teknisi.home', compact('stats', 'priority', 'schedules', 'recent', 'reminders', 'week'));
+    }
+}

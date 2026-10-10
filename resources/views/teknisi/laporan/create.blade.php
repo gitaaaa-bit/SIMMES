@@ -1,0 +1,124 @@
+@extends('layouts.technician')
+@section('title', 'Buat Laporan Perbaikan')
+@section('heading', 'Buat Laporan')
+@section('sub', 'Laporkan kendala mesin untuk penanganan segera')
+@section('back', route('teknisi.laporan.index'))
+
+@section('content')
+<form class="tcard" method="POST" action="{{ route('teknisi.laporan.store') }}" enctype="multipart/form-data">
+  @csrf
+
+  <label class="f" style="margin-top:0">Nama Mesin</label>
+  <input class="input" id="machine_name" name="machine_name" list="mlist" value="{{ old('machine_name') }}" placeholder="Contoh: Mesin Press 2, Pompa Air Utama, Genset" autocomplete="off" required>
+  <datalist id="mlist">
+    @foreach ($machines as $m)
+      <option value="{{ $m->name }}" data-code="{{ $m->code }}" data-loc="{{ $m->location }}">{{ $m->code }} · {{ $m->location }}</option>
+    @endforeach
+  </datalist>
+  <span class="tiny" style="color:var(--ink3)">Ketik manual nama mesin (bebas diisi nama apa saja).</span>
+  @error('machine_name') <div class="err">{{ $message }}</div> @enderror
+
+  <div class="row" style="gap:10px;margin-top:12px">
+    <div style="flex:1">
+      <label class="f" style="margin-top:0">Kode Mesin (Opsional)</label>
+      <input class="input" id="machine_code" name="machine_code" value="{{ old('machine_code') }}" placeholder="Contoh: MSN-014">
+      <span class="tiny" style="color:var(--ink3)">Otomatis jika kosong</span>
+      @error('machine_code') <div class="err">{{ $message }}</div> @enderror
+    </div>
+    <div style="flex:1">
+      <label class="f" style="margin-top:0">Lokasi Mesin</label>
+      <input class="input" id="location" name="location" value="{{ old('location') }}" placeholder="Contoh: Produksi A, Gudang">
+      <span class="tiny" style="color:var(--ink3)">Area letak mesin</span>
+      @error('location') <div class="err">{{ $message }}</div> @enderror
+    </div>
+  </div>
+
+  <label class="f" style="margin-top:14px">Keluhan / Masalah Mesin</label>
+  <textarea class="textarea" name="complaint" rows="4" placeholder="Jelaskan secara rinci gejala atau kerusakan yang terjadi…" required>{{ old('complaint') }}</textarea>
+  @error('complaint') <div class="err">{{ $message }}</div> @enderror
+
+  <label class="f">Tingkat Urgensi</label>
+  <div class="urg">
+    @foreach (['rendah' => 'Rendah', 'sedang' => 'Sedang', 'tinggi' => 'Tinggi'] as $v => $l)
+      <label>
+        <input type="radio" name="urgency" value="{{ $v }}" @checked(old('urgency', 'sedang') === $v)>
+        <span>{{ $l }}</span>
+      </label>
+    @endforeach
+  </div>
+  @error('urgency') <div class="err">{{ $message }}</div> @enderror
+
+  <label class="f" style="margin-top:14px">Foto / Video Dokumentasi (Opsional)</label>
+  <label class="dash" for="file-input" style="min-height:90px;cursor:pointer">
+    <span id="file-label">📷 Pilih foto atau video kendala</span>
+    <input id="file-input" type="file" name="files[]" accept="image/*,video/*" multiple hidden>
+  </label>
+  <span class="tiny" style="color:var(--ink3);margin-top:4px;display:block">Format: JPG, PNG, WEBP, MP4. Maksimal 30MB per file.</span>
+  <div id="preview-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px"></div>
+  @error('files.*') <div class="err">{{ $message }}</div> @enderror
+
+  <div class="row" style="margin-top:24px;gap:10px">
+    <a class="btn block" href="{{ route('teknisi.laporan.index') }}" style="flex:1">Batal</a>
+    <button class="btn primary block" type="submit" style="flex:2">Kirim Laporan</button>
+  </div>
+</form>
+
+@push('scripts')
+<script>
+// File preview handler
+const fileInput = document.getElementById('file-input');
+const fileLabel = document.getElementById('file-label');
+const previewGrid = document.getElementById('preview-grid');
+
+if (fileInput) {
+  fileInput.addEventListener('change', function () {
+    previewGrid.innerHTML = '';
+    const files = Array.from(this.files || []);
+    if (files.length === 0) {
+      fileLabel.textContent = '📷 Pilih foto atau video kendala';
+      return;
+    }
+    fileLabel.textContent = '✔ ' + files.length + ' file dipilih (klik untuk ganti)';
+
+    files.forEach((file) => {
+      const box = document.createElement('div');
+      box.style.cssText = 'position:relative;border-radius:12px;overflow:hidden;border:1.5px solid var(--line);aspect-ratio:1;background:#faf6f6;display:flex;align-items:center;justify-content:center;';
+
+      const url = URL.createObjectURL(file);
+      if (file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.src = url;
+        video.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        video.controls = false;
+        box.appendChild(video);
+      } else {
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        box.appendChild(img);
+      }
+      previewGrid.appendChild(box);
+    });
+  });
+}
+
+// Auto-fill kode & lokasi jika memilih nama mesin yang sudah pernah ada
+const mInput = document.getElementById('machine_name');
+const mCode = document.getElementById('machine_code');
+const mLoc = document.getElementById('location');
+const datalist = document.getElementById('mlist');
+
+if (mInput && datalist) {
+  mInput.addEventListener('input', function() {
+    const val = this.value.trim().toLowerCase();
+    const opts = Array.from(datalist.options);
+    const matched = opts.find(o => o.value.toLowerCase() === val);
+    if (matched) {
+      if (!mCode.value && matched.dataset.code) mCode.value = matched.dataset.code;
+      if (!mLoc.value && matched.dataset.loc) mLoc.value = matched.dataset.loc;
+    }
+  });
+}
+</script>
+@endpush
+@endsection

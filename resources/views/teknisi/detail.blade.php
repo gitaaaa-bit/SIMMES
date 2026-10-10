@@ -1,0 +1,88 @@
+@extends('layouts.technician')
+@section('title', $ticket->code)
+@section('heading', 'Detail Tiket')
+@section('back', route('teknisi.tugas.index'))
+@section('nonav', '1')
+@section('content')
+@php
+  $hasReport = $ticket->mediaOf('report')->count() > 0;
+  $hasBefore = $ticket->mediaOf('before')->count() > 0 || $hasReport;
+  $hasAfter  = $ticket->mediaOf('after')->count() > 0;
+  $started   = in_array($ticket->status, ['diproses', 'selesai']);
+  $done      = $ticket->status === 'selesai';
+@endphp
+<div class="tcard">
+  <div class="row between"><b style="font-size:24px">{{ $ticket->code }}</b>@include('partials.chip', ['v' => $ticket->display_status])</div>
+  <div class="tiny" style="margin-top:10px">Mesin</div><b>{{ $ticket->machine->label }} · {{ $ticket->machine->location }}</b>
+  <p class="muted" style="margin-top:6px">{{ $ticket->complaint }}</p>
+  <div style="margin-top:6px">@include('partials.chip', ['v' => $ticket->urgency])</div>
+</div>
+
+<div class="tcard">
+  <div class="row between"><b>Progress pekerjaan</b><b>{{ $ticket->progress }}%</b></div>
+  <div class="progress" style="margin-top:8px"><i style="width:{{ $ticket->progress }}%"></i></div>
+  <ul class="steps">
+    <li class="{{ $hasBefore ? 'done' : '' }}"><i>✓</i> Foto sebelum</li>
+    <li class="{{ $started ? 'done' : '' }}"><i>✓</i> Pengerjaan</li>
+    <li class="{{ $hasAfter ? 'done' : '' }}"><i>✓</i> Foto sesudah</li>
+    <li class="{{ $done ? 'done' : '' }}"><i>✓</i> Selesai</li>
+  </ul>
+</div>
+
+@if ($hasReport)
+<div class="tcard">
+  <b>Foto / dokumentasi saat dilaporkan</b>
+  <div class="row wrap" style="margin-top:10px">
+    @foreach ($ticket->mediaOf('report') as $m)
+      <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="">@endif</div>
+    @endforeach
+  </div>
+</div>
+@endif
+
+@foreach (['before' => 'Foto / video sebelum', 'after' => 'Foto / video sesudah'] as $ph => $title)
+<div class="tcard">
+  <b>{{ $title }}</b>
+  <div class="row wrap" style="margin-top:10px">
+    @foreach ($ticket->mediaOf($ph) as $m)
+      <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="">@endif</div>
+    @endforeach
+    @unless ($done)
+    <form method="POST" action="{{ route('teknisi.tugas.upload', $ticket) }}" enctype="multipart/form-data">@csrf
+      <input type="hidden" name="phase" value="{{ $ph }}">
+      <label class="dash" style="width:110px;height:84px;min-height:0">+ Tambah
+        <input type="file" name="files[]" accept="image/*,video/*" multiple hidden onchange="this.form.submit()">
+      </label>
+    </form>
+    @endunless
+  </div>
+  @if ($ph === 'after' && !$hasAfter && !$done)<div class="tiny" style="margin-top:8px">Wajib diisi sebelum selesai.</div>@endif
+</div>
+@endforeach
+
+<div class="tcard">
+  <b>Riwayat status</b>
+  <ul class="tl" style="margin-top:12px">
+    @foreach ($ticket->logs as $l)<li><b>{{ $l->label }}</b><div class="tiny">{{ $l->created_at->translatedFormat('d M, H:i') }}{{ $l->note ? ' · '.$l->note : '' }}</div></li>@endforeach
+  </ul>
+  @unless ($done)
+  <form method="POST" action="{{ route('teknisi.tugas.progress', $ticket) }}" style="margin-top:14px">@csrf
+    <input class="input" name="action" placeholder="Tindakan (mis. Ganti bearing)" value="{{ $ticket->action }}">
+    <input class="input" name="spareparts" placeholder="Sparepart (opsional)" value="{{ $ticket->spareparts }}" style="margin-top:8px">
+    <textarea class="textarea" name="note" rows="2" placeholder="Catatan progress…" style="margin-top:8px" required></textarea>
+    <button class="btn ghost block" style="margin-top:10px">Tambahkan progress</button>
+  </form>
+  @endunless
+</div>
+
+<div style="height:90px"></div>
+@unless ($done)
+<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;padding:12px 18px 18px;background:linear-gradient(transparent,var(--bg) 35%);z-index:10">
+  @if (!$started)
+    <form method="POST" action="{{ route('teknisi.tugas.start', $ticket) }}">@csrf<button class="btn primary block">Mulai Proses</button></form>
+  @else
+    <form method="POST" action="{{ route('teknisi.tugas.finish', $ticket) }}">@csrf<button class="btn primary block {{ $hasAfter ? '' : 'disabled' }}">Tandai Selesai</button></form>
+  @endif
+</div>
+@endunless
+@endsection
