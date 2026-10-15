@@ -101,13 +101,22 @@ class TicketReportController extends Controller
         $ticket->log('Dilaporkan', $user->name);
         $machine->update(['status' => 'dilaporkan']);
 
+        // Siarkan notifikasi laporan baru ke semua teknisi (siapa cepat dia dapat)
+        if ($ticket->technician_id === null) {
+            \App\Services\WhatsAppService::broadcastToAllTechnicians($ticket);
+        }
+
         $routePrefix = $user->isTeknisi() ? 'teknisi' : 'manajemen';
         return redirect()->route($routePrefix.'.lapor.sukses', $ticket);
     }
 
     public function success(Ticket $ticket)
     {
-        return view('tiket.sukses', ['ticket' => $ticket->load('machine')]);
+        $broadcastLink = \App\Services\WhatsAppService::makeBroadcastShareLink($ticket);
+        return view('tiket.sukses', [
+            'ticket'        => $ticket->load('machine'),
+            'broadcastLink' => $broadcastLink,
+        ]);
     }
 
     /** Autocomplete "Ditemukan: Mesin Press 2, Produksi A" */

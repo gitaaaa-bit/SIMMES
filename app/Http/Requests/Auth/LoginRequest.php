@@ -14,7 +14,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nik' => ['required', 'string'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -22,7 +22,7 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'nik.required' => 'NIK atau nama lengkap wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
             'password.required' => 'Kata sandi wajib diisi.',
         ];
     }

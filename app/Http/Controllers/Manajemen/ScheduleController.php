@@ -14,15 +14,19 @@ class ScheduleController extends Controller
 {
     public function index(Request $r)
     {
-        $schedules = MaintenanceSchedule::with(['machine', 'technician'])->orderBy('due_date')->get();
+        // Antrian jadwal maintenance aktif (belum selesai), terbaru dimasukkan berada di paling atas
+        $schedules = MaintenanceSchedule::with(['machine', 'technician'])
+            ->where('status', '!=', 'selesai')
+            ->latest()
+            ->get();
 
         // kartu ringkas ala Figma: Lewat jadwal / Minggu ini / Terjadwal
         $cards = [
             'lewat'    => $schedules->filter(fn ($s) => $s->display_status === 'terlambat')->first(),
-            'minggu'   => $schedules->filter(fn ($s) => $s->status !== 'selesai' && $s->due_date->between(now()->startOfDay(), now()->addDays(7)))->first(),
+            'minggu'   => $schedules->filter(fn ($s) => $s->due_date->between(now()->startOfDay(), now()->addDays(7)))->first(),
             'terjadwal'=> $schedules->filter(fn ($s) => $s->status === 'terjadwal' && $s->due_date->gt(now()->addDays(7)))->first(),
         ];
-        $history = MaintenanceSchedule::with(['machine', 'technician'])->where('status', 'selesai')->latest('completed_at')->take(5)->get();
+        $history = MaintenanceSchedule::with(['machine', 'technician'])->where('status', 'selesai')->latest('completed_at')->take(10)->get();
 
         return view('manajemen.jadwal.index', compact('schedules', 'cards', 'history'));
     }
@@ -52,23 +56,82 @@ class ScheduleController extends Controller
     public function store(Request $r)
     {
         $d = $r->validate([
-            'machine_id' => 'required|exists:machines,id',
-            'task' => 'required|max:120',
-            'type' => 'required|in:rutin,insiden',
-            'interval_months' => 'nullable|integer|min:1|max:60',
-            'due_date' => 'required|date',
-            'technician_id' => 'nullable|exists:users,id',
+            'machine_id'           => 'nullable',
+            'machine_source'       => 'nullable|in:database,manual',
+            'new_machine_name'     => 'nullable|string|max:120',
+            'new_machine_code'     => 'nullable|string|max:50',
+            'new_machine_location' => 'nullable|string|max:120',
+            'task'                 => 'required|max:120',
+            'type'                 => 'required|in:rutin,insiden',
+            'interval_months'      => 'nullable|integer|min:1|max:60',
+            'due_date'             => 'required|date',
+            'due_time'             => 'nullable|string|max:8',
+            'technician_id'        => 'nullable|exists:users,id',
         ]);
-        $d['interval_label'] = $d['interval_months'] ? $d['interval_months'].' bulan' : null;
-        MaintenanceSchedule::create($d);
-        return redirect()->route('manajemen.jadwal.index')->with('ok', 'Jadwal ditambahkan.');
+
+        // Resolusi mesin: pilih dari database ATAU buat mesin baru dari input manual
+        $machine = null;
+        if ($r->input('machine_source') === 'manual' || !empty($d['new_machine_name']) || empty($d['machine_id'])) {
+            if (empty($d['new_machine_name'])) {
+                return back()->withInput()->with('error', 'Silakan isi Nama Mesin (input manual) atau pilih mesin dari database.');
+            }
+            $machine = Machine::findOrCreateByName(
+                $d['new_machine_name'],
+                $d['new_machine_code'] ?? null,
+                $d['new_machine_location'] ?? 'Workshop'
+            );
+        } else {
+            $machine = Machine::find($d['machine_id']);
+            if (!$machine) {
+                return back()->withInput()->with('error', 'Mesin yang dipilih tidak ditemukan di database.');
+            }
+        }
+
+        $scheduleData = [
+            'machine_id'      => $machine->id,
+            'task'            => $d['task'],
+            'type'            => $d['type'],
+            'interval_months' => $d['interval_months'],
+            'interval_label'  => $d['interval_months'] ? $d['interval_months'].' bulan' : null,
+            'due_date'        => $d['due_date'],
+            'due_time'        => $d['due_time'] ?: '09:00',
+            'technician_id'   => $d['technician_id'],
+        ];
+
+        $schedule = MaintenanceSchedule::create($scheduleData);
+        $schedule->load(['machine', 'technician']);
+
+        $waNote = '';
+        if ($r->boolean('send_wa', true) && $schedule->technician) {
+            $wa = \App\Services\WhatsAppService::sendScheduleReminder($schedule, 'Jadwal Baru');
+            if ($wa['success']) {
+                $waNote = ($wa['simulated'] ?? false)
+                    ? " & simulasi WA tercatat di log ({$schedule->technician->name})."
+                    : " & notifikasi WA terkirim ke {$schedule->technician->name} ({$schedule->technician->whatsapp}).";
+            } else {
+                $waNote = " (WA: {$wa['message']}).";
+            }
+        } elseif ($schedule->technician_id && !$schedule->technician?->whatsapp) {
+            $waNote = " (Teknisi belum mengisi nomor WhatsApp).";
+        }
+
+        return redirect()->route('manajemen.jadwal.index')
+            ->with('ok', "Jadwal untuk mesin {$machine->label} berhasil ditambahkan di antrian teratas{$waNote}");
     }
 
     public function assign(Request $r, MaintenanceSchedule $jadwal)
     {
         $d = $r->validate(['technician_id' => 'required|exists:users,id']);
+        $tech = User::findOrFail($d['technician_id']);
         $jadwal->update($d);
-        return back()->with('ok', 'Teknisi ditugaskan.');
+        $jadwal->load(['machine', 'technician']);
+
+        $wa = \App\Services\WhatsAppService::sendScheduleReminder($jadwal, 'Penugasan Baru');
+        $waNote = $wa['success']
+            ? ' & notifikasi WA terkirim.'
+            : ($tech->whatsapp ? ' (WA: ' . $wa['message'] . ')' : ' (Teknisi belum mengisi WA).');
+
+        return back()->with('ok', "Teknisi {$tech->name} ditugaskan{$waNote}");
     }
 
     /** "Buat tiket" dari jadwal yang lewat. */
@@ -96,8 +159,36 @@ class ScheduleController extends Controller
                 'machine_id' => $jadwal->machine_id, 'technician_id' => $jadwal->technician_id, 'type' => 'rutin',
                 'task' => $jadwal->task, 'interval_label' => $jadwal->interval_label,
                 'interval_months' => $jadwal->interval_months, 'due_date' => $next,
+                'due_time' => $jadwal->due_time ?: '09:00',
             ]);
         }
         return back()->with('ok', 'Jadwal ditandai selesai, siklus berikutnya dibuat.');
+    }
+
+    /** Uji coba kirim notifikasi WhatsApp untuk jadwal ini. */
+    public function testNotif(MaintenanceSchedule $jadwal)
+    {
+        $jadwal->load(['machine', 'technician']);
+        if (!$jadwal->technician) {
+            return back()->with('error', 'Pilih atau tugaskan teknisi terlebih dahulu pada jadwal ini untuk menguji notifikasi.');
+        }
+
+        $res = \App\Services\WhatsAppService::sendScheduleReminder($jadwal, 'Uji Coba Pengingat');
+        if ($res['success']) {
+            $msg = ($res['simulated'] ?? false)
+                ? "Simulasi kirim notifikasi WA dicatat di log sistem untuk {$jadwal->technician->name} ({$jadwal->technician->whatsapp})."
+                : "Notifikasi WhatsApp berhasil dikirim ke {$jadwal->technician->name} ({$jadwal->technician->whatsapp}).";
+            return back()->with('ok', $msg);
+        }
+
+        return back()->with('error', "Gagal mengirim notifikasi WhatsApp: {$res['message']}");
+    }
+
+    /** Jalankan pengecekan dan pengiriman pengingat harian secara instan. */
+    public function runReminders()
+    {
+        \Illuminate\Support\Facades\Artisan::call('simmes:reminders');
+        $out = trim(\Illuminate\Support\Facades\Artisan::output());
+        return back()->with('ok', 'Pengecekan pengingat jadwal berhasil dijalankan' . ($out ? ": {$out}" : '.'));
     }
 }

@@ -22,16 +22,16 @@ class LoginController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
-        $identifier = trim($request->string('nik')->toString());
+        $identifier = trim($request->string('email')->toString());
 
-        $user = User::where('nik', $identifier)
-            ->orWhere('email', $identifier)
-            ->orWhere('name', $identifier)
+        // Cari berdasarkan email ATAU NIK unik (tidak menggunakan name untuk mencegah konflik jika ada nama yang sama)
+        $user = User::where('email', $identifier)
+            ->orWhere('nik', $identifier)
             ->first();
 
         if (! $user || ! Hash::check($request->string('password')->toString(), $user->password)) {
             throw ValidationException::withMessages([
-                'nik' => 'NIK / Nama atau kata sandi salah.',
+                'email' => 'Email atau kata sandi salah.',
             ]);
         }
 

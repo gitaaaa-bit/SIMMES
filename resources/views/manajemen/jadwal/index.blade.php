@@ -1,8 +1,15 @@
 @extends('layouts.manager')
 @section('title', 'Jadwal Maintenance')
 @section('content')
-<div class="top"><div><h1>Jadwal Maintenance</h1></div>
-  <a class="btn primary" href="{{ route('manajemen.jadwal.create') }}">@include('partials.icon', ['n' => 'plus']) Tambah Jadwal</a></div>
+<div class="top">
+  <div>
+    <h1>Jadwal Maintenance</h1>
+    <p class="muted small">Antrian jadwal pemeliharaan mesin (terbaru dimasukkan berada di atas).</p>
+  </div>
+  <a class="btn primary" href="{{ route('manajemen.jadwal.create') }}">
+    @include('partials.icon', ['n' => 'plus']) Tambah Jadwal
+  </a>
+</div>
 @include('manajemen.jadwal._tabs')
 
 <div class="grid g3" style="margin-bottom:18px">
@@ -10,21 +17,21 @@
   <div class="card sched-card" style="border-top:5px solid var(--r700)">
     <span class="chip c-terlambat" style="align-self:flex-start">Lewat jadwal</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
-    <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }}</b></div>
+    <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
     <form method="POST" action="{{ route('manajemen.jadwal.tiket', $s) }}">@csrf<button class="btn primary">Buat tiket</button></form>
   </div>@endif
   @if ($s = $cards['minggu'])
   <div class="card sched-card" style="border-top:5px solid var(--r400)">
     <span class="chip c-minggu" style="align-self:flex-start">Minggu ini</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
-    <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }}</b></div>
+    <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
     <form method="POST" action="{{ route('manajemen.jadwal.selesai', $s) }}">@csrf<button class="btn dark">Tandai selesai</button></form>
   </div>@endif
   @if ($s = $cards['terjadwal'])
   <div class="card sched-card" style="border-top:5px solid #d9cfd1">
     <span class="chip c-terjadwal" style="align-self:flex-start">Terjadwal</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
-    <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }}</b></div>
+    <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
     <a class="btn" href="{{ route('manajemen.mesin.show', $s->machine) }}">Lihat riwayat</a>
   </div>@endif
 </div>
@@ -34,27 +41,50 @@
 </div>
 
 <div class="card tablewrap">
+  <div class="row between" style="margin-bottom:10px">
+    <div class="row" style="gap:8px">
+      <h3 style="margin:0">Antrian Jadwal</h3>
+      <span class="chip" style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:700">Terbaru di Atas</span>
+    </div>
+  </div>
   <table>
-    <thead><tr><th>Mesin</th><th>Jenis</th><th>Jatuh tempo</th><th>Teknisi</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Mesin</th><th>Tugas / Jenis</th><th>Waktu Pelaksanaan</th><th>Teknisi</th><th>Progress</th><th>Status</th><th style="text-align:right">Aksi</th></tr></thead>
     <tbody>
     @forelse ($schedules as $s)
+      @php
+        $tech = $s->technician;
+      @endphp
       <tr>
-        <td><b>{{ $s->machine->label }}</b><div class="tiny">{{ $s->task }}</div></td>
-        <td>{{ ucfirst($s->type) }}</td>
-        <td>{{ $s->due_date->translatedFormat('d M Y') }}</td>
-        <td>{{ $s->technician?->name ?? 'Belum ditugaskan' }}</td>
-        <td style="min-width:150px"><div class="row"><div class="progress" style="flex:1"><i style="width:{{ $s->progress }}%"></i></div><b class="small">{{ $s->progress }}%</b></div>
-          <div class="tiny">{{ $s->progress == 100 ? 'Bukti lengkap' : ($s->progress ? 'Sedang dikerjakan' : 'Belum mulai') }}</div></td>
-        <td>@include('partials.chip', ['v' => $s->display_status])</td>
+        <td><b>{{ $s->machine->label }}</b><div class="tiny">{{ $s->machine->location }}</div></td>
+        <td><b>{{ $s->task }}</b><div class="tiny muted">{{ ucfirst($s->type) }}{{ $s->interval_label ? ' · '.$s->interval_label : '' }}</div></td>
         <td>
-          @if (!$s->technician_id)
+          <b>{{ $s->due_date->translatedFormat('d M Y') }}</b>
+          <div class="tiny" style="color:var(--brand);font-weight:700">
+            @if ($s->due_time) Jam {{ $s->due_time }} WIB @else - @endif
+          </div>
+        </td>
+        <td>
+          @if ($tech)
+            <b>{{ $tech->name }}</b>
+            <div class="tiny {{ $tech->whatsapp ? 'text-ok' : 'muted' }}">{{ $tech->whatsapp ? 'WA: '.$tech->whatsapp : 'Belum ada WA' }}</div>
+          @else
             <form class="row" method="POST" action="{{ route('manajemen.jadwal.assign', $s) }}">@csrf
-              <select class="select" name="technician_id" style="padding:6px 10px;min-width:120px" onchange="this.form.submit()" required>
+              <select class="select" name="technician_id" style="padding:5px 8px;font-size:12px;min-width:120px" onchange="this.form.submit()" required>
                 <option value="">Tugaskan…</option>
-                @foreach (\App\Models\User::where('role','teknisi')->where('status','aktif')->get() as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
+                @foreach (\App\Models\User::where('role','teknisi')->where('status','aktif')->get() as $u)
+                  <option value="{{ $u->id }}">{{ $u->name }}</option>
+                @endforeach
               </select>
             </form>
-          @else <a class="link" href="{{ route('manajemen.mesin.show', $s->machine) }}">Detail</a> @endif
+          @endif
+        </td>
+        <td style="min-width:130px">
+          <div class="row"><div class="progress" style="flex:1"><i style="width:{{ $s->progress }}%"></i></div><b class="small">{{ $s->progress }}%</b></div>
+          <div class="tiny">{{ $s->progress == 100 ? 'Bukti lengkap' : ($s->progress ? 'Sedang dikerjakan' : 'Belum mulai') }}</div>
+        </td>
+        <td>@include('partials.chip', ['v' => $s->display_status])</td>
+        <td style="text-align:right">
+          <a class="link" href="{{ route('manajemen.mesin.show', $s->machine) }}" style="font-weight:600">Detail →</a>
         </td>
       </tr>
     @empty <tr><td colspan="7" class="empty">Belum ada jadwal.</td></tr> @endforelse

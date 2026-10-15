@@ -11,8 +11,28 @@
   $started   = in_array($ticket->status, ['diproses', 'selesai']);
   $done      = $ticket->status === 'selesai';
 @endphp
+@if ($ticket->technician_id === null)
+  <div class="tcard hero" style="background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);border:1.5px solid #fdba74;text-align:center;padding:18px;margin-bottom:14px">
+    <div style="font-size:13px;font-weight:800;color:#c2410c">⚡ TUGAS TERBUKA (BELUM DIAMBIL)</div>
+    <p class="small muted" style="margin:6px 0 14px">Tiket ini belum diambil oleh teknisi manapun. Ambil tugas ini sekarang agar resmi menjadi tanggung jawab Anda.</p>
+    <form method="POST" action="{{ route('teknisi.tugas.claim', $ticket) }}">
+      @csrf
+      <button class="btn primary block" style="background:linear-gradient(135deg,#ea580c 0%,#c2410c 100%);justify-content:center;font-size:15px;font-weight:800">
+        ⚡ Ambil Tugas Perbaikan Ini
+      </button>
+    </form>
+  </div>
+@endif
+
 <div class="tcard">
-  <div class="row between"><b style="font-size:24px">{{ $ticket->code }}</b>@include('partials.chip', ['v' => $ticket->display_status])</div>
+  <div class="row between">
+    <b style="font-size:24px">{{ $ticket->code }}</b>
+    @if ($ticket->technician_id === null)
+      <span class="chip" style="background:#ffedd5;color:#c2410c;font-weight:800">Belum Diambil</span>
+    @else
+      @include('partials.chip', ['v' => $ticket->display_status])
+    @endif
+  </div>
   <div class="tiny" style="margin-top:10px">Mesin</div><b>{{ $ticket->machine->label }} · {{ $ticket->machine->location }}</b>
   <p class="muted" style="margin-top:6px">{{ $ticket->complaint }}</p>
   <div style="margin-top:6px">@include('partials.chip', ['v' => $ticket->urgency])</div>

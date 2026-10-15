@@ -20,6 +20,15 @@ class MaintenanceSchedule extends Model
         return $this->status;
     }
 
+    public function getFormattedScheduleAttribute(): string
+    {
+        $date = $this->due_date ? $this->due_date->translatedFormat('d M Y') : '-';
+        if ($this->due_time) {
+            return "{$date} · {$this->due_time} WIB";
+        }
+        return $date;
+    }
+
     /** Tanggal jatuh tempo berikutnya setelah selesai (berdasar interval). */
     public function nextDue(): ?\Illuminate\Support\Carbon
     {

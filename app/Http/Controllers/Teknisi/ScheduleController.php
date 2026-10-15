@@ -32,6 +32,7 @@ class ScheduleController extends Controller
                     'machine_id' => $jadwal->machine_id, 'technician_id' => $jadwal->technician_id, 'type' => 'rutin',
                     'task' => $jadwal->task, 'interval_label' => $jadwal->interval_label,
                     'interval_months' => $jadwal->interval_months, 'due_date' => $next,
+                    'due_time' => $jadwal->due_time ?: '09:00',
                 ]);
             }
         }

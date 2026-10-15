@@ -31,8 +31,15 @@ class DashboardController extends Controller
             ];
         });
 
-        $upcoming = MaintenanceSchedule::with('machine')->where('status', '!=', 'selesai')->orderBy('due_date')->take(4)->get();
+        // Antrian jadwal maintenance aktif (belum selesai), yang baru dimasukkan berada di paling atas
+        $schedules = MaintenanceSchedule::with(['machine', 'technician'])
+            ->where('status', '!=', 'selesai')
+            ->latest()
+            ->take(6)
+            ->get();
 
-        return view('manajemen.dashboard', compact('stats', 'tickets', 'trend', 'upcoming'));
+        $upcoming = $schedules;
+
+        return view('manajemen.dashboard', compact('stats', 'tickets', 'trend', 'upcoming', 'schedules'));
     }
 }

@@ -3,34 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#dc2626">
+<meta name="theme-color" content="#b1002c">
 <title>@yield('title') · {{ config('app.name') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --red-900: #7f1d1d;
-    --red-800: #991b1b;
-    --red-700: #b91c1c;
-    --red-600: #dc2626;
-    --red-500: #ef4444;
-    --red-100: #fee2e2;
-    --red-50:  #fef2f2;
-    --slate-900: #0f172a;
-    --slate-800: #1e293b;
-    --slate-700: #334155;
-    --slate-600: #475569;
-    --slate-400: #94a3b8;
-    --slate-300: #cbd5e1;
-    --slate-200: #e2e8f0;
-    --slate-100: #f1f5f9;
-    --slate-50:  #f8fafc;
+    --red-900: #40000a;
+    --red-800: #920022;
+    --red-700: #b1002c;
+    --red-600: #dc143c;
+    --red-500: #ffb3b3;
+    --red-100: #ffdad9;
+    --red-50:  #fff1f0;
+    --slate-900: #1b1c1c;
+    --slate-800: #303030;
+    --slate-700: #474646;
+    --slate-600: #5f5e5e;
+    --slate-400: #777575;
+    --slate-300: #c8c6c5;
+    --slate-200: #eae8e7;
+    --slate-100: #efeded;
+    --slate-50:  #f5f3f3;
   }
   *, *::before, *::after { box-sizing: border-box; }
   html, body { min-height: 100%; margin: 0; }
   body {
-    background: #ffffff;
+    background: #fbf9f8;
     color: var(--slate-900);
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     position: relative;
@@ -159,7 +159,8 @@
   .title {
     margin: 0 0 22px;
     font-size: 26px;
-    font-weight: 800;
+    font-family: 'Poppins', 'Inter', sans-serif;
+    font-weight: 600;
     color: var(--slate-900);
     letter-spacing: -0.025em;
   }
@@ -242,7 +243,7 @@
     min-height: 48px;
     border: 0;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--red-600) 0%, var(--red-700) 100%);
+    background: var(--red-700);
     color: #ffffff;
     font: inherit;
     font-weight: 700;
@@ -253,7 +254,7 @@
     margin-top: 4px;
   }
   .btn:hover {
-    background: linear-gradient(135deg, var(--red-500) 0%, var(--red-800) 100%);
+    background: var(--red-900);
     box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
     transform: translateY(-1px);
   }

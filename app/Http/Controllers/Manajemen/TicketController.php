@@ -54,6 +54,34 @@ class TicketController extends Controller
         ]);
         $ticket->log('Ditugaskan', $tech->name);
 
-        return back()->with('ok', "Tiket {$ticket->code} ditugaskan ke {$tech->name}.");
+        $waLink = null;
+        if (!empty($tech->whatsapp)) {
+            $msg = \App\Services\WhatsAppService::buildTicketMessage($ticket, $tech);
+            $waLink = \App\Services\WhatsAppService::makeDirectLink($tech->whatsapp, $msg);
+            \App\Services\WhatsAppService::sendTicketAssignment($ticket, $tech);
+        }
+
+        return back()
+            ->with('ok', "Tiket {$ticket->code} berhasil ditugaskan ke {$tech->name}.")
+            ->with('wa_link', $waLink)
+            ->with('tech_name', $tech->name)
+            ->with('tech_phone', $tech->whatsapp);
+    }
+
+    public function notifyWa(Ticket $ticket)
+    {
+        $ticket->load(['machine', 'technician']);
+        if (!$ticket->technician || empty($ticket->technician->whatsapp)) {
+            return back()->with('err', 'Teknisi belum ditugaskan atau belum memiliki nomor WhatsApp di profilnya.');
+        }
+
+        $msg = \App\Services\WhatsAppService::buildTicketMessage($ticket, $ticket->technician);
+        $waLink = \App\Services\WhatsAppService::makeDirectLink($ticket->technician->whatsapp, $msg);
+
+        // Coba kirim via gateway di background jika ada token
+        \App\Services\WhatsAppService::sendTicketAssignment($ticket, $ticket->technician);
+
+        // Buka langsung ke WhatsApp
+        return redirect()->away($waLink);
     }
 }

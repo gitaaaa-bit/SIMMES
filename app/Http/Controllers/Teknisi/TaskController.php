@@ -12,32 +12,75 @@ class TaskController extends Controller
     public function index(Request $r)
     {
         $filter = $r->get('f', 'semua');
-        $q = Ticket::with('machine')->where('technician_id', auth()->id())->latest();
+        $availableCount = Ticket::whereNull('technician_id')->where('status', '!=', 'selesai')->count();
 
-        match ($filter) {
-            'belum'   => $q->whereIn('status', ['ditugaskan', 'dilaporkan']),
-            'proses'  => $q->where('status', 'diproses'),
-            'selesai' => $q->where('status', 'selesai'),
-            default   => null,
-        };
+        if ($filter === 'tersedia') {
+            $q = Ticket::with('machine')->whereNull('technician_id')->where('status', '!=', 'selesai')->latest();
+        } else {
+            $q = Ticket::with('machine')->where('technician_id', auth()->id())->latest();
+
+            match ($filter) {
+                'belum'   => $q->whereIn('status', ['ditugaskan', 'dilaporkan']),
+                'proses'  => $q->where('status', 'diproses'),
+                'selesai' => $q->where('status', 'selesai'),
+                default   => null,
+            };
+        }
+
         if ($s = $r->q) {
             $q->where(fn ($w) => $w->where('code', 'like', "%$s%")
                 ->orWhereHas('machine', fn ($m) => $m->where('code', 'like', "%$s%")->orWhere('name', 'like', "%$s%")));
         }
 
-        return view('teknisi.tugas', ['tickets' => $q->get(), 'filter' => $filter]);
+        return view('teknisi.tugas', [
+            'tickets'        => $q->get(),
+            'filter'         => $filter,
+            'availableCount' => $availableCount,
+        ]);
     }
 
-    public function show(Ticket $ticket)
+   public function show(Ticket $ticket)
+{
+    $ticket->load(['machine', 'media', 'logs', 'reporter']);
+
+    // Cek apakah sudah ada foto/media "sebelum" perbaikan
+    $hasBefore = $ticket->media->where('phase', 'before')->isNotEmpty();
+
+    return view('teknisi.detail', compact('ticket', 'hasBefore'));
+}
+
+    /** "Ambil Tugas Ini" (Siapa cepat dia dapat). */
+    public function claim(Ticket $ticket)
     {
-        $this->authorizeTicket($ticket);
-        $ticket->load(['machine', 'media', 'logs.user', 'reporter']);
-        return view('teknisi.detail', compact('ticket'));
+        $ticket->load('technician');
+
+        // Cek jika sudah keduluan diambil teknisi lain
+        if ($ticket->technician_id && $ticket->technician_id !== auth()->id()) {
+            return redirect()->route('teknisi.tugas.index', ['f' => 'tersedia'])
+                ->with('err', "Tiket {$ticket->code} sudah lebih dulu diambil oleh {$ticket->technician->name}.");
+        }
+
+        $ticket->update([
+            'technician_id' => auth()->id(),
+            'status'        => 'diproses',
+            'started_at'    => $ticket->started_at ?? now(),
+        ]);
+        $ticket->machine->update(['status' => 'diproses']);
+        $ticket->log('Diambil', auth()->user()->name . ' (Klaim Mandiri)');
+        $ticket->recalcProgress();
+
+        return redirect()->route('teknisi.tugas.show', $ticket)
+            ->with('ok', "Berhasil! Tugas {$ticket->code} sekarang Anda ambil dan siap dikerjakan.");
     }
 
     /** "Mulai Proses" */
     public function start(Ticket $ticket)
     {
+        // Jika tiket belum ada teknisi, otomatis klaim ke teknisi saat ini
+        if ($ticket->technician_id === null) {
+            return $this->claim($ticket);
+        }
+
         $this->authorizeTicket($ticket);
         if ($ticket->status !== 'selesai') {
             $ticket->update(['status' => 'diproses', 'started_at' => $ticket->started_at ?? now()]);
@@ -94,6 +137,9 @@ class TaskController extends Controller
 
     private function authorizeTicket(Ticket $t): void
     {
-        abort_unless($t->technician_id === auth()->id(), 403);
+        // Boleh diakses jika milik teknisi saat ini ATAU tiket belum ada yang mengambil (terbuka)
+        if ($t->technician_id !== null && $t->technician_id !== auth()->id()) {
+            abort(403, 'Tiket ini sedang dikerjakan oleh teknisi lain.');
+        }
     }
 }

@@ -6,7 +6,7 @@
 @forelse ($schedules as $s)
   <div class="tcard">
     <div class="row between"><b>{{ $s->machine->label }}</b>@include('partials.chip', ['v' => $s->display_status])</div>
-    <div class="muted small" style="margin:4px 0 10px">{{ $s->task }}{{ $s->interval_label ? ' · tiap '.$s->interval_label : '' }} · jatuh tempo <b>{{ $s->due_date->translatedFormat('d M Y') }}</b></div>
+    <div class="muted small" style="margin:4px 0 10px">{{ $s->task }}{{ $s->interval_label ? ' · tiap '.$s->interval_label : '' }} · jatuh tempo <b>{{ $s->due_date->translatedFormat('d M Y') }}{{ $s->due_time ? ' · Jam '.$s->due_time.' WIB' : '' }}</b></div>
     <div class="row"><div class="progress" style="flex:1"><i style="width:{{ $s->progress }}%"></i></div><b class="small">{{ $s->progress }}%</b></div>
     @if ($s->status !== 'selesai')
     <form method="POST" action="{{ route('teknisi.jadwal.progress', $s) }}" style="margin-top:12px">@csrf

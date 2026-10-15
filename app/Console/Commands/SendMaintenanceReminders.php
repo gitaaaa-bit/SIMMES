@@ -24,8 +24,14 @@ class SendMaintenanceReminders extends Command
                 $d = (int) $today->diffInDays($s->due_date, false);
                 $kind = match (true) { $d === 7 => 'H-7', $d === 1 => 'H-1', $d === 0 => 'Hari-H', $d < 0 => 'Terlambat', default => null };
                 if (!$kind) return;
-                Log::info("[REMINDER {$kind}] {$s->machine->code} {$s->task} -> ".($s->technician?->whatsapp ?? 'belum ditugaskan'));
-                $this->line("{$kind}: {$s->machine->code} {$s->task}");
+
+                if ($s->technician) {
+                    \App\Services\WhatsAppService::sendScheduleReminder($s, $kind);
+                }
+
+                $target = $s->technician?->whatsapp ?? 'belum ada nomor WA';
+                Log::info("[REMINDER {$kind}] {$s->machine->code} {$s->task} -> {$target}");
+                $this->line("{$kind}: {$s->machine->code} {$s->task} ({$target})");
             });
         return self::SUCCESS;
     }

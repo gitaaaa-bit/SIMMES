@@ -37,10 +37,15 @@ class RegisterController extends Controller
             $nik = sprintf('%s%03d', $prefix, $nextNumber);
         }
 
-        User::create([
+        // Format nomor WhatsApp jika memungkinkan
+        $rawWa = trim($request->string('whatsapp')->toString());
+        $cleanWa = \App\Services\WhatsAppService::normalizeNumber($rawWa) ?? $rawWa;
+
+        $user = User::create([
             'name' => trim($request->string('name')->toString()),
             'nik' => $nik,
-            'email' => strtolower($nik).'@simmes.local',
+            'email' => strtolower(trim($request->string('email')->toString())),
+            'whatsapp' => $cleanWa,
             'password' => $request->string('password')->toString(), // di-hash otomatis oleh cast
             'role' => $roleEnum,
             'status' => AccountStatus::Aktif, // langsung aktif, tanpa persetujuan manajemen
@@ -48,6 +53,6 @@ class RegisterController extends Controller
 
         return redirect()
             ->route('login')
-            ->with('status', "Pendaftaran berhasil! Akun kamu sudah aktif. Silakan masuk menggunakan Nama Lengkap atau NIK ({$nik}).");
+            ->with('status', "Pendaftaran berhasil! Akun kamu sudah aktif. Silakan masuk menggunakan Email ({$user->email}) dan kata sandi Anda.");
     }
 }

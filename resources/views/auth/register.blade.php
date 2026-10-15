@@ -21,6 +21,19 @@
   </div>
 
   <div class="field">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="Contoh: budi@gmail.com" autocomplete="email" required>
+  </div>
+
+  <div class="field">
+    <label for="whatsapp">Nomor WhatsApp</label>
+    <input id="whatsapp" name="whatsapp" type="tel" value="{{ old('whatsapp') }}" placeholder="Contoh: 081234567890" autocomplete="tel" required>
+    <small style="color:var(--ink2,#64748b);font-size:12px;margin-top:4px;display:block">
+      Nomor ini terhubung untuk notifikasi penugasan perbaikan & jadwal maintenance otomatis.
+    </small>
+  </div>
+
+  <div class="field">
     <label for="role">Peran</label>
     <select id="role" name="role" required>
       <option value="" disabled @selected(! old('role'))>Pilih peran</option>

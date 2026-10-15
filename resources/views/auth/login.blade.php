@@ -20,9 +20,9 @@
   @endif
 
   <div class="field">
-    <label for="nik">NIK atau Nama Lengkap</label>
-    <input id="nik" name="nik" type="text" value="{{ old('nik') }}" placeholder="Masukkan NIK atau nama lengkap"
-           autocomplete="username" autofocus required>
+    <label for="email">Email</label>
+    <input id="email" name="email" type="text" value="{{ old('email') }}" placeholder="Masukkan email terdaftar"
+           autocomplete="email" autofocus required>
   </div>
 
   <div class="field">

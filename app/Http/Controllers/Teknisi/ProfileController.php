@@ -17,7 +17,42 @@ class ProfileController extends Controller
 
     public function update(Request $r)
     {
-        auth()->user()->update($r->validate(['whatsapp' => 'nullable|max:20', 'bagian' => 'nullable|max:80']));
-        return back()->with('ok', 'Profil diperbarui.');
+        $data = $r->validate([
+            'whatsapp' => 'nullable|string|max:30',
+            'bagian'   => 'nullable|string|max:80',
+        ]);
+
+        if (!empty($data['whatsapp'])) {
+            $normalized = \App\Services\WhatsAppService::normalizeNumber($data['whatsapp']);
+            if ($normalized) {
+                $data['whatsapp'] = $normalized;
+            }
+        }
+
+        auth()->user()->update($data);
+        return back()->with('ok', 'Profil dan nomor WhatsApp berhasil disimpan.');
+    }
+
+    public function testWhatsApp()
+    {
+        $u = auth()->user();
+        if (empty($u->whatsapp)) {
+            return back()->with('err', 'Harap isi dan simpan nomor WhatsApp terlebih dahulu.');
+        }
+
+        $appUrl = config('app.url', url('/'));
+        $testMsg = "✅ *SIMMES - TES NOTIFIKASI WHATSAPP*\n\n"
+            . "Halo *{$u->name}*,\n"
+            . "Nomor WhatsApp Anda (" . $u->whatsapp . ") telah berhasil tersambung dengan sistem SIMMES!\n\n"
+            . "Anda siap menerima notifikasi setiap kali ada tiket perbaikan mesin baru yang ditugaskan ke Anda.\n\n"
+            . "👉 {$appUrl}/teknisi/tugas";
+
+        $directWa = \App\Services\WhatsAppService::makeDirectLink($u->whatsapp, $testMsg);
+
+        // Jika token gateway dikonfigurasi, kirim juga via gateway
+        \App\Services\WhatsAppService::sendTestMessage($u);
+
+        // Buka langsung aplikasi WhatsApp
+        return redirect()->away($directWa);
     }
 }

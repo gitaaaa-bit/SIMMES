@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
         Route::get('perbaikan', [M\TicketController::class, 'index'])->name('perbaikan.index');
         Route::get('perbaikan/{ticket}', [M\TicketController::class, 'show'])->name('perbaikan.show')->whereNumber('ticket');
         Route::post('perbaikan/{ticket}/tugaskan', [M\TicketController::class, 'assign'])->name('perbaikan.assign');
+        Route::post('perbaikan/{ticket}/kirim-wa', [M\TicketController::class, 'notifyWa'])->name('perbaikan.notifyWa');
 
         Route::get('lapor', [TicketReportController::class, 'create'])->name('lapor');
         Route::post('lapor', [TicketReportController::class, 'store'])->name('lapor.store');
@@ -38,9 +39,13 @@ Route::middleware('auth')->group(function () {
         Route::get('jadwal/kalender', [M\ScheduleController::class, 'calendar'])->name('jadwal.kalender');
         Route::get('jadwal/baru', [M\ScheduleController::class, 'create'])->name('jadwal.create');
         Route::post('jadwal', [M\ScheduleController::class, 'store'])->name('jadwal.store');
+        Route::get('jadwal/{jadwal}', [M\ScheduleController::class, 'show'])->name('jadwal.show')->whereNumber('jadwal');
         Route::post('jadwal/{jadwal}/tugaskan', [M\ScheduleController::class, 'assign'])->name('jadwal.assign');
+        Route::post('jadwal/{jadwal}/kirim-wa', [M\ScheduleController::class, 'notifyWa'])->name('jadwal.notifyWa');
         Route::post('jadwal/{jadwal}/tiket', [M\ScheduleController::class, 'makeTicket'])->name('jadwal.tiket');
         Route::post('jadwal/{jadwal}/selesai', [M\ScheduleController::class, 'complete'])->name('jadwal.selesai');
+        Route::post('jadwal/{jadwal}/tes-wa', [M\ScheduleController::class, 'testNotif'])->name('jadwal.testNotif');
+        Route::post('jadwal/run-reminders', [M\ScheduleController::class, 'runReminders'])->name('jadwal.runReminders');
 
         Route::get('laporan', [M\ReportController::class, 'index'])->name('laporan.index');
 
@@ -57,6 +62,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('tugas', [T\TaskController::class, 'index'])->name('tugas.index');
         Route::get('tugas/{ticket}', [T\TaskController::class, 'show'])->name('tugas.show');
+        Route::post('tugas/{ticket}/ambil', [T\TaskController::class, 'claim'])->name('tugas.claim');
         Route::post('tugas/{ticket}/mulai', [T\TaskController::class, 'start'])->name('tugas.start');
         Route::post('tugas/{ticket}/unggah', [T\TaskController::class, 'upload'])->name('tugas.upload');
         Route::post('tugas/{ticket}/progress', [T\TaskController::class, 'progress'])->name('tugas.progress');
@@ -82,5 +88,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('profil', [T\ProfileController::class, 'show'])->name('profil');
         Route::put('profil', [T\ProfileController::class, 'update'])->name('profil.update');
+        Route::post('profil/tes-wa', [T\ProfileController::class, 'testWhatsApp'])->name('profil.testWa');
     });
 });

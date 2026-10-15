@@ -22,16 +22,30 @@ class UserController extends Controller
     public function store(Request $r)
     {
         $d = $r->validate([
-            'name' => 'required|max:120', 'nik' => 'required|unique:users,nik|max:30',
-            'department' => 'required|max:80', 'bagian' => 'nullable|max:80',
-            'whatsapp' => 'nullable|max:20', 'role' => 'required|in:teknisi,manajemen',
+            'name' => 'required|max:120',
+            'nik' => 'nullable|unique:users,nik|max:30',
+            'email' => 'nullable|email|unique:users,email|max:255',
+            'department' => 'required|max:80',
+            'bagian' => 'nullable|max:80',
+            'whatsapp' => 'nullable|max:20',
+            'role' => 'required|in:teknisi,manajemen',
         ]);
-        // Kata sandi awal = NIK (minta pengguna menggantinya setelah login pertama).
-        User::create($d + [
-            'status' => 'aktif', 'password' => Hash::make($d['nik']),
-            'email' => $d['nik'].'@simmes.local',   // hapus baris ini bila kolom email nullable / tidak dipakai
+
+        // Jika NIK kosong / tidak diisi, buatkan otomatis oleh sistem (TEK001, MGR001, dst)
+        $nik = !empty($d['nik']) ? trim($d['nik']) : User::nextNik($d['role']);
+        $d['nik'] = $nik;
+
+        $email = !empty($d['email']) ? strtolower(trim($d['email'])) : strtolower($nik) . '@simmes.local';
+        $d['email'] = $email;
+
+        // Kata sandi awal = NIK
+        $user = User::create($d + [
+            'status' => 'aktif',
+            'password' => Hash::make($nik),
         ]);
-        return redirect()->route('manajemen.pengguna.index')->with('ok', 'Pengguna ditambahkan (sandi awal = NIK).');
+
+        return redirect()->route('manajemen.pengguna.index')
+            ->with('ok', "Pengguna {$user->name} berhasil ditambahkan dengan NIK {$user->nik} (Kata sandi awal = {$user->nik}).");
     }
 
     public function approve(Request $r, User $user)

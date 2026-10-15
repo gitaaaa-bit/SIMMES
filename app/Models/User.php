@@ -41,4 +41,29 @@ class User extends Authenticatable
             'approved_at' => 'datetime',
         ];
     }
+
+    /**
+     * Generate NIK otomatis sesuai peran (misal: TEK001, MGR001).
+     */
+    public static function nextNik(string|Role $role): string
+    {
+        $roleValue = $role instanceof Role ? $role->value : $role;
+        $prefix = in_array(strtolower((string) $roleValue), ['manajemen', 'manager']) ? 'MGR' : 'TEK';
+
+        $latest = static::where('nik', 'LIKE', "{$prefix}%")
+            ->pluck('nik')
+            ->map(function ($val) use ($prefix) {
+                return (int) substr($val, strlen($prefix));
+            })
+            ->max();
+
+        $nextNumber = ($latest && $latest >= 1) ? $latest + 1 : 1;
+        $nik = sprintf('%s%03d', $prefix, $nextNumber);
+        while (static::where('nik', $nik)->exists()) {
+            $nextNumber++;
+            $nik = sprintf('%s%03d', $prefix, $nextNumber);
+        }
+
+        return $nik;
+    }
 }

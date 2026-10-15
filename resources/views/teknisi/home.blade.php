@@ -3,6 +3,23 @@
 @section('heading', 'Halo, '.explode(' ', auth()->user()->name)[0].' 👋')
 @section('sub', 'Dashboard Teknisi · '.now()->translatedFormat('l, d F Y'))
 @section('content')
+@if ($availableCount > 0)
+<div class="tcard hero" style="background:linear-gradient(135deg,#fff1f3 0%,#ffe4e8 100%);border:1.5px solid var(--r400);margin-bottom:14px;box-shadow:0 8px 20px -8px rgba(220,38,38,0.25)">
+  <div class="row between" style="gap:10px">
+    <div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="chip" style="background:#ea580c;color:#fff;font-size:11px;padding:2px 8px;font-weight:800">⚡ TERBUKA</span>
+        <b style="color:var(--r800);font-size:14.5px">{{ $availableCount }} Laporan Perbaikan Baru!</b>
+      </div>
+      <div class="tiny" style="color:var(--ink2);margin-top:4px">Siapa cepat dia dapat. Ambil tugas sekarang sebelum teknisi lain.</div>
+    </div>
+    <a class="btn primary" href="{{ route('teknisi.tugas.index', ['f' => 'tersedia']) }}" style="font-size:12.5px;padding:9px 14px;white-space:nowrap">
+      Ambil Tugas
+    </a>
+  </div>
+</div>
+@endif
+
 <div class="tstats">
   <a class="tstat hot" href="{{ route('teknisi.tugas.index', ['f' => 'belum']) }}"><b>{{ $stats['baru'] }}</b><span>Tugas baru</span></a>
   <a class="tstat" href="{{ route('teknisi.tugas.index', ['f' => 'proses']) }}"><b>{{ $stats['proses'] }}</b><span>Sedang dikerjakan</span></a>
@@ -25,7 +42,10 @@
   @foreach ($reminders as $r)
     <div class="reminder">
       <span class="rem-tag {{ $r['tone'] === 'late' ? 'late' : '' }}">{{ $r['label'] }}</span>
-      <div><b class="small">{{ $r['s']->task }} · {{ $r['s']->machine->code }}</b><div class="tiny">{{ $r['s']->machine->name }} · {{ $r['s']->due_date->translatedFormat('d M') }}</div></div>
+      <div>
+        <b class="small">{{ $r['s']->task }} · {{ $r['s']->machine->code }}</b>
+        <div class="tiny">{{ $r['s']->machine->name }} · {{ $r['s']->due_date->translatedFormat('d M') }}{{ $r['s']->due_time ? ' · Jam '.$r['s']->due_time : '' }}</div>
+      </div>
     </div>
   @endforeach
 </div>
@@ -45,7 +65,13 @@
 <div class="sect"><h2>Jadwal maintenance saya</h2><a class="link small" href="{{ route('teknisi.jadwal') }}">Semua</a></div>
 <div class="tcard">
   @forelse ($schedules as $s)
-    <div class="reminder"><div style="flex:1"><b class="small">{{ $s->machine->label }}</b><div class="tiny">{{ $s->task }} · {{ $s->due_date->translatedFormat('d M Y') }}</div></div>@include('partials.chip', ['v' => $s->display_status])</div>
+    <div class="reminder">
+      <div style="flex:1">
+        <b class="small">{{ $s->machine->label }}</b>
+        <div class="tiny">{{ $s->task }} · {{ $s->due_date->translatedFormat('d M Y') }}{{ $s->due_time ? ' · Jam '.$s->due_time : '' }}</div>
+      </div>
+      @include('partials.chip', ['v' => $s->display_status])
+    </div>
   @empty <div class="empty">Belum ada jadwal.</div> @endforelse
 </div>
 
