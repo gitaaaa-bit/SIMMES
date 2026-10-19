@@ -28,7 +28,7 @@
           @if ($ok)
             <span>{{ $d }}</span>
             @foreach ($byDay[$d] ?? [] as $e)
-              <a class="ev {{ $tone[$e->display_status] ?? 'c-sedang' }}" href="{{ route('manajemen.mesin.show', $e->machine) }}">{{ $e->task }} {{ $e->machine->code }}</a>
+              <a class="ev {{ $tone[$e->display_status] ?? 'c-sedang' }}" href="{{ route('manajemen.mesin.show', [$e->machine, 'from' => 'kalender']) }}">{{ $e->task }} {{ $e->machine->code }}</a>
             @endforeach
           @endif
         </div>

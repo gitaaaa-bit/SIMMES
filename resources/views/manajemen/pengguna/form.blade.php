@@ -1,44 +1,59 @@
 @extends('layouts.manager')
-@section('title', 'Tambah Pengguna')
+@php($editing = isset($user))
+@section('title', $editing ? 'Ubah Pengguna' : 'Tambah Pengguna')
 @section('content')
 <div class="top">
   <div>
-    <h1>Tambah Pengguna</h1>
-    <p>NIK dan kata sandi awal otomatis di-generate oleh sistem jika dikosongkan.</p>
+    <h1>{{ $editing ? 'Ubah Data Pengguna' : 'Tambah Pengguna' }}</h1>
+    <p>{{ $editing ? 'Perbarui penempatan, departemen, kontak, dan data kerja pengguna.' : 'NIK dan kata sandi awal otomatis dibuat jika dikosongkan.' }}</p>
   </div>
-  <a class="btn" href="{{ route('manajemen.pengguna.index') }}">← Kembali</a>
+  <a class="btn" href="{{ route('manajemen.pengguna.index') }}">&larr; Kembali</a>
 </div>
 
-<form class="card" style="max-width:620px" method="POST" action="{{ route('manajemen.pengguna.store') }}">
+<form class="card" style="max-width:620px" method="POST" action="{{ $editing ? route('manajemen.pengguna.update', $user) : route('manajemen.pengguna.store') }}">
   @csrf
-  <label class="f" style="margin-top:0">Nama Lengkap</label>
-  <input class="input" name="name" value="{{ old('name') }}" placeholder="Nama pengguna" required>
+  @if ($editing) @method('PUT') @endif
 
-  <label class="f">Peran (Role)</label>
+  <label class="f" style="margin-top:0">Nama Lengkap</label>
+  <input class="input" name="name" value="{{ old('name', $user->name ?? '') }}" placeholder="Nama pengguna" required>
+  @error('name')<div class="err">{{ $message }}</div>@enderror
+
+  <label class="f">Peran</label>
+  @php($currentRole = old('role', isset($user) ? ($user->role instanceof \App\Enums\Role ? $user->role->value : $user->role) : 'teknisi'))
   <select class="select" name="role">
-    <option value="teknisi" @selected(old('role') == 'teknisi')>Teknisi</option>
-    <option value="manajemen" @selected(old('role') == 'manajemen')>Manager</option>
+    <option value="teknisi" @selected($currentRole === 'teknisi')>Teknisi</option>
+    <option value="manajemen" @selected($currentRole === 'manajemen')>Manager</option>
   </select>
 
-  <label class="f">NIK <span class="muted small" style="font-weight:normal">(Opsional — Otomatis jika dikosongkan)</span></label>
-  <input class="input" name="nik" value="{{ old('nik') }}" placeholder="Biarkan kosong untuk generate otomatis (misal: TEK003 / MGR003)">
-  <div class="tiny muted" style="margin-top:4px">Jika dikosongkan, sistem akan otomatis membuat NIK berurutan dan kata sandi awal akan disamakan dengan NIK.</div>
+  <label class="f">NIK <span class="muted small" style="font-weight:normal">{{ $editing ? '(wajib)' : '(opsional - otomatis jika dikosongkan)' }}</span></label>
+  <input class="input" name="nik" value="{{ old('nik', $user->nik ?? '') }}" placeholder="" {{ $editing ? 'required' : '' }}>
+  @error('nik')<div class="err">{{ $message }}</div>@enderror
 
-  <label class="f">Email <span class="muted small" style="font-weight:normal">(Opsional)</span></label>
-  <input class="input" type="email" name="email" value="{{ old('email') }}" placeholder="Contoh: teknisi@perusahaan.com (Otomatis jika kosong)">
-  <div class="tiny muted" style="margin-top:4px">Digunakan untuk login ke sistem. Jika kosong, sistem otomatis membuat email default dari NIK.</div>
+  <label class="f">Kata Sandi <span class="muted small" style="font-weight:normal">{{ $editing }}</span></label>
+  <input class="input" type="text" name="password" value="" placeholder="Minimal 4 karakter">
+  @error('password')<div class="err">{{ $message }}</div>@enderror
+
+  <label class="f">Email (Akun Login)</label>
+  <input class="input" type="email" name="email" value="{{ old('email', $user->email ?? '') }}" placeholder="teknisi@gmail.com" required>
+  @error('email')<div class="err">{{ $message }}</div>@enderror
 
   <label class="f">Departemen</label>
-  <input class="input" name="department" value="{{ old('department', 'Maintenance') }}" placeholder="Maintenance / Produksi" required>
+  <input class="input" name="department" value="{{ old('department', $user->department ?? 'Maintenance') }}" placeholder="Maintenance / Produksi" required>
 
   <label class="f">Bagian / Spesialisasi</label>
-  <input class="input" name="bagian" value="{{ old('bagian') }}" placeholder="Mekanik / Listrik / Mesin CNC (opsional)">
+  <input class="input" name="bagian" value="{{ old('bagian', $user->bagian ?? '') }}" placeholder="">
+
+  <label class="f">Jabatan / Posisi</label>
+  <input class="input" name="job_title" value="{{ old('job_title', $user->job_title ?? '') }}" placeholder="">
+
+  <label class="f">Lokasi Penempatan Kerja</label>
+  <input class="input" name="work_location" value="{{ old('work_location', $user->work_location ?? '') }}" placeholder="">
+  <div class="tiny muted" style="margin-top:4px"></div>
 
   <label class="f">Nomor WhatsApp</label>
-  <input class="input" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="Contoh: 081234567890">
-  <div class="tiny muted" style="margin-top:4px">Digunakan untuk menerima notifikasi tugas & jadwal maintenance otomatis.</div>
+  <input class="input" name="whatsapp" value="{{ old('whatsapp', $user->whatsapp ?? '') }}" placeholder="">
+  <div class="tiny muted" style="margin-top:4px"></div>
 
-  <button class="btn primary block" style="margin-top:22px">Simpan Pengguna</button>
+  <button class="btn primary block" style="margin-top:22px">{{ $editing ? 'Simpan Perubahan' : 'Simpan Pengguna' }}</button>
 </form>
 @endsection
-

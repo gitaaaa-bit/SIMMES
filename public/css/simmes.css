@@ -13,7 +13,7 @@
   --font:'Inter',system-ui,sans-serif; --font-heading:'Poppins','Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden}
 body{font-family:var(--font);color:var(--ink);background:var(--bg);font-size:14.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4,h5,h6{font-family:var(--font-heading)}
 a{color:inherit;text-decoration:none}
@@ -74,18 +74,94 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stro
 .stat.s2{--bar:#8a5200} .stat.s3{--bar:var(--r600)}
 .stat.s4{--bar:var(--r900);background:var(--surface-low)} .stat.s4 b,.stat.s4 span{color:var(--r700)}
 
-table{width:100%;border-collapse:collapse}
-th{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);text-align:left;padding:10px 12px;font-weight:700}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--r800);text-align:left;padding:12px;font-weight:700;background:var(--rose50);border-top:1px solid var(--rose200);border-bottom:1px solid var(--rose200)}
+th:first-child{border-left:1px solid var(--rose200);border-radius:8px 0 0 8px}
+th:last-child{border-right:1px solid var(--rose200);border-radius:0 8px 8px 0}
 td{padding:14px 12px;border-top:1px solid var(--line);vertical-align:middle}
 tbody tr{transition:.15s} tbody tr:hover{background:var(--rose50)}
 .tablewrap{overflow-x:auto}
 
-.chip{display:inline-block;padding:4px 13px;border-radius:99px;font-weight:700;font-size:12.5px;background:#eee;color:#4a4a4a;white-space:nowrap}
-.c-tinggi,.c-terlambat{background:var(--rose100);color:var(--r700)} .c-terlambat{background:var(--r700);color:#fff}
-.c-sedang,.c-diproses,.c-dikerjakan,.c-ditugaskan,.c-insiden{background:var(--warn-bg);color:var(--warn)}
-.c-rendah,.c-dilaporkan,.c-terjadwal,.c-rutin{background:#efe9ea;color:#4d4144}
-.c-selesai,.c-aktif{background:var(--ok-bg);color:var(--ok)}
-.c-pending{background:var(--rose100);color:var(--r600)} .c-minggu{background:var(--rose200);color:var(--r800)}
+/* ---------- Realistic Modern Status Badges (Chips) ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3.5px 10px;border-radius:9999px;font-size:12px;font-weight:600;line-height:1.2;white-space:nowrap;border:1px solid transparent;transition:.15s ease}
+.chip-dot{width:6.5px;height:6.5px;border-radius:50%;flex-shrink:0;background-color:currentColor}
+
+/* Selesai / Aktif (Green / Emerald) */
+.c-selesai,.c-aktif{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+.c-selesai .chip-dot,.c-aktif .chip-dot{background-color:#10b981}
+
+/* Diproses / Dikerjakan (Sky / Blue dengan Animasi Pulse) */
+.c-diproses,.c-dikerjakan{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.c-diproses .chip-dot,.c-dikerjakan .chip-dot{background-color:#3b82f6;box-shadow:0 0 0 0 rgba(59,130,246,0.6);animation:chipPulse 2s infinite}
+
+/* Ditugaskan / Menunggu / Pending (Amber / Warning) */
+.c-ditugaskan,.c-menunggu,.c-pending{background:#fffbeb;color:#b45309;border-color:#fde68a}
+.c-ditugaskan .chip-dot,.c-menunggu .chip-dot,.c-pending .chip-dot{background-color:#f59e0b}
+
+/* Terlambat / Tinggi / Darurat (Rose / Danger) */
+.c-terlambat,.c-tinggi,.c-darurat{background:#fff1f2;color:#be123c;border-color:#fecdd3}
+.c-terlambat .chip-dot,.c-tinggi .chip-dot,.c-darurat .chip-dot{background-color:#e11d48}
+
+/* Sedang (Orange / Medium) */
+.c-sedang{background:#fff7ed;color:#c2410c;border-color:#ffedd5}
+.c-sedang .chip-dot{background-color:#f97316}
+
+/* Terjadwal / Rutin / Minggu (Indigo / Violet) */
+.c-terjadwal,.c-rutin,.c-minggu{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe}
+.c-terjadwal .chip-dot,.c-rutin .chip-dot,.c-minggu .chip-dot{background-color:#8b5cf6}
+
+/* Dilaporkan / Rendah (Slate / Muted) */
+.c-dilaporkan,.c-rendah{background:#f8fafc;color:#475569;border-color:#e2e8f0}
+.c-dilaporkan .chip-dot,.c-rendah .chip-dot{background-color:#94a3b8}
+
+/* Insiden (Deep Rose) */
+.c-insiden{background:#fff1f2;color:#9f1239;border-color:#fecdd3}
+.c-insiden .chip-dot{background-color:#e11d48}
+
+@keyframes chipPulse{
+  0%{box-shadow:0 0 0 0 rgba(59,130,246,0.7)}
+  70%{box-shadow:0 0 0 5px rgba(59,130,246,0)}
+  100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}
+}
+
+/* ---------- Realistic Action Buttons ---------- */
+.btn-action{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--ink);background:#fff;border:1px solid #dcdad9;box-shadow:0 1px 2px rgba(0,0,0,.04);text-decoration:none;transition:all .16s ease;white-space:nowrap;cursor:pointer}
+.btn-action:hover{color:var(--r700);background:#fff6f7;border-color:var(--r300);box-shadow:0 2px 6px rgba(177,0,44,.12);transform:translateY(-1px);text-decoration:none}
+.btn-action svg{width:14px;height:14px;stroke-width:2.2;flex-shrink:0}
+.btn-action.primary{background:var(--r700);color:#fff;border-color:var(--r700)}
+.btn-action.primary:hover{background:var(--r800);border-color:var(--r800);color:#fff;box-shadow:0 3px 8px rgba(177,0,44,.25)}
+
+/* ---------- Micro Badges & Utilities ---------- */
+.badge-code{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;letter-spacing:.3px}
+.badge-wa{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:600;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;text-decoration:none;transition:.15s}
+.badge-wa:hover{background:#d1fae5;color:#065f46;border-color:#6ee7b7;text-decoration:none}
+.badge-wa svg{width:13px;height:13px;flex-shrink:0}
+.badge-wa-empty{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#9ca3af;font-style:italic}
+.badge-time{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+.badge-time svg{width:12px;height:12px}
+
+/* ---------- Clickable KPI Stat Cards ---------- */
+.stat-card{display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;padding:18px 20px;border-radius:14px;background:#fff;border:1px solid #e7e5e4;box-shadow:0 1px 3px rgba(0,0,0,.03);text-decoration:none;color:inherit;transition:all .2s ease}
+.stat-card:hover{transform:translateY(-2px);border-color:#d6d3d1;box-shadow:0 8px 22px -6px rgba(0,0,0,.08);text-decoration:none}
+.stat-card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.stat-card-title{font-size:13px;font-weight:600;color:var(--ink2)}
+.stat-card-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.stat-card-val{font-size:36px;font-weight:800;letter-spacing:-0.8px;line-height:1;margin-bottom:6px;color:var(--ink)}
+.stat-card-status{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.stat-card-foot{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ink3);font-weight:600;border-top:1px solid #f5f5f4;padding-top:10px;margin-top:12px;transition:color .15s}
+.stat-card-foot svg{width:14px;height:14px;transition:transform .18s}
+.stat-card:hover .stat-card-foot{color:var(--r700)}
+.stat-card:hover .stat-card-foot svg{transform:translateX(3px)}
+
+/* ---------- Live Header Pill & Section Badges ---------- */
+.live-status-pill{display:inline-flex;align-items:center;gap:7px;padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:600;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background-color:#16a34a;box-shadow:0 0 0 0 rgba(22,163,74,0.6);animation:livePulse 2s infinite}
+@keyframes livePulse{
+  0%{box-shadow:0 0 0 0 rgba(22,163,74,0.7)}
+  70%{box-shadow:0 0 0 6px rgba(22,163,74,0)}
+  100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}
+}
+
 
 .filters{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
 .input,.select,.textarea{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;width:100%;transition:.15s;outline:none}
@@ -276,6 +352,13 @@ body.tech{background:var(--surface-low);min-height:100vh}
   .card{padding:16px 12px;border-radius:16px}
   .card h2,.card h3{font-size:15px;margin-bottom:10px}
   .tablewrap table{min-width:540px}
+  .tablewrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .dashboard-section-head{flex-direction:column;align-items:stretch!important;gap:12px}
+  .dashboard-section-title{min-width:0}
+  .dashboard-title-line{align-items:flex-start!important;flex-wrap:wrap}
+  .dashboard-title-line h2{line-height:1.35}
+  .dashboard-section-actions{width:100%;flex-wrap:wrap}
+  .dashboard-section-actions .btn-action{flex:1 1 auto;justify-content:center;min-height:40px}
   .bars{gap:6px;height:130px}
   .bars div{font-size:10px}
   .kv{grid-template-columns:1fr 1fr;gap:12px}

@@ -22,6 +22,8 @@ class User extends Authenticatable
         'status',
         'department',
         'bagian',
+        'job_title',
+        'work_location',
         'whatsapp',
         'approved_by',
         'approved_at',

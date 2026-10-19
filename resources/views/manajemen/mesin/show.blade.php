@@ -1,11 +1,36 @@
 @extends('layouts.manager')
 @section('title', $machine->code)
 @section('content')
+@php
+  $from = request('from');
+  $backUrl = route('manajemen.mesin.index');
+
+  if ($from === 'dashboard') {
+      $backUrl = route('manajemen.dashboard');
+  } elseif ($from === 'jadwal') {
+      $backUrl = route('manajemen.jadwal.index');
+  } elseif ($from === 'kalender') {
+      $backUrl = route('manajemen.jadwal.kalender');
+  } else {
+      $prev = url()->previous();
+      if ($prev && $prev !== url()->current()) {
+          $dashPath = rtrim(parse_url(route('manajemen.dashboard'), PHP_URL_PATH) ?? '', '/');
+          $prevPath = rtrim(parse_url($prev, PHP_URL_PATH) ?? '', '/');
+          if ($dashPath && $prevPath === $dashPath) {
+              $backUrl = route('manajemen.dashboard');
+          } elseif ($prevPath === rtrim(parse_url(route('manajemen.jadwal.index'), PHP_URL_PATH) ?? '', '/')) {
+              $backUrl = route('manajemen.jadwal.index');
+          } elseif ($prevPath === rtrim(parse_url(route('manajemen.jadwal.kalender'), PHP_URL_PATH) ?? '', '/')) {
+              $backUrl = route('manajemen.jadwal.kalender');
+          }
+      }
+  }
+@endphp
 <div class="top">
   <div><h1>Detail Mesin</h1><p>{{ $machine->label }}</p></div>
   <div class="actions">
     @if ($machine->needs_service)<span class="chip c-diproses">Perlu servis</span>@endif
-    <a class="btn" href="{{ route('manajemen.mesin.index') }}">← Kembali</a>
+    <a class="btn" href="{{ $backUrl }}">← Kembali</a>
   </div>
 </div>
 <div class="card">

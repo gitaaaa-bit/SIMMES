@@ -33,7 +33,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('mesin', M\MachineController::class)->parameters(['mesin' => 'mesin']);
 
         Route::get('teknisi', [M\TechnicianController::class, 'index'])->name('teknisi.index');
-        Route::get('teknisi/{teknisi}', [M\TechnicianController::class, 'show'])->name('teknisi.show');
+        Route::get('teknisi/baru', [M\TechnicianController::class, 'create'])->name('teknisi.create');
+        Route::post('teknisi', [M\TechnicianController::class, 'store'])->name('teknisi.store');
+        Route::get('teknisi/{teknisi}', [M\TechnicianController::class, 'show'])->name('teknisi.show')->whereNumber('teknisi');
 
         Route::get('jadwal', [M\ScheduleController::class, 'index'])->name('jadwal.index');
         Route::get('jadwal/kalender', [M\ScheduleController::class, 'calendar'])->name('jadwal.kalender');
@@ -52,6 +54,9 @@ Route::middleware('auth')->group(function () {
         Route::get('pengguna', [M\UserController::class, 'index'])->name('pengguna.index');
         Route::get('pengguna/baru', [M\UserController::class, 'create'])->name('pengguna.create');
         Route::post('pengguna', [M\UserController::class, 'store'])->name('pengguna.store');
+        Route::get('pengguna/{user}/edit', [M\UserController::class, 'edit'])->name('pengguna.edit');
+        Route::put('pengguna/{user}', [M\UserController::class, 'update'])->name('pengguna.update');
+        Route::delete('pengguna/{user}', [M\UserController::class, 'destroy'])->name('pengguna.destroy');
         Route::post('pengguna/{user}/setujui', [M\UserController::class, 'approve'])->name('pengguna.approve');
         Route::post('pengguna/{user}/tolak', [M\UserController::class, 'reject'])->name('pengguna.reject');
     });

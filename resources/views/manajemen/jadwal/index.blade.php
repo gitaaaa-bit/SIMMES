@@ -32,7 +32,7 @@
     <span class="chip c-terjadwal" style="align-self:flex-start">Terjadwal</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
     <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
-    <a class="btn" href="{{ route('manajemen.mesin.show', $s->machine) }}">Lihat riwayat</a>
+    <a class="btn" href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}">Lihat riwayat</a>
   </div>@endif
 </div>
 
@@ -84,7 +84,7 @@
         </td>
         <td>@include('partials.chip', ['v' => $s->display_status])</td>
         <td style="text-align:right">
-          <a class="link" href="{{ route('manajemen.mesin.show', $s->machine) }}" style="font-weight:600">Detail →</a>
+          <a class="link" href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}" style="font-weight:600">Detail →</a>
         </td>
       </tr>
     @empty <tr><td colspan="7" class="empty">Belum ada jadwal.</td></tr> @endforelse

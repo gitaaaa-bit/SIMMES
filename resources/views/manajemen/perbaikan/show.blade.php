@@ -1,9 +1,25 @@
 @extends('layouts.manager')
 @section('title', $ticket->code)
 @section('content')
+@php
+  $from = request('from');
+  $backUrl = route('manajemen.perbaikan.index');
+  if ($from === 'dashboard') {
+      $backUrl = route('manajemen.dashboard');
+  } else {
+      $prev = url()->previous();
+      if ($prev && $prev !== url()->current()) {
+          $dashPath = rtrim(parse_url(route('manajemen.dashboard'), PHP_URL_PATH) ?? '', '/');
+          $prevPath = rtrim(parse_url($prev, PHP_URL_PATH) ?? '', '/');
+          if ($dashPath && $prevPath === $dashPath) {
+              $backUrl = route('manajemen.dashboard');
+          }
+      }
+  }
+@endphp
 <div class="top">
   <div><h1>{{ $ticket->code }}</h1><p>{{ $ticket->machine->label }} · {{ $ticket->machine->location }}</p></div>
-  <div class="actions">@include('partials.chip', ['v' => $ticket->display_status])<a class="btn" href="{{ route('manajemen.perbaikan.index') }}">← Kembali</a></div>
+  <div class="actions">@include('partials.chip', ['v' => $ticket->display_status])<a class="btn" href="{{ $backUrl }}">← Kembali</a></div>
 </div>
 
 @if (session('wa_link'))
