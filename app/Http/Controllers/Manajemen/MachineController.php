@@ -37,7 +37,7 @@ class MachineController extends Controller
 
     public function show(Machine $mesin)
     {
-        $mesin->load(['nextSchedule', 'tickets' => fn ($t) => $t->with('media')->latest()]);
+        $mesin->load(['nextSchedule', 'tickets' => fn ($t) => $t->with(['media', 'logs', 'technician'])->latest()]);
         return view('manajemen.mesin.show', ['machine' => $mesin]);
     }
 

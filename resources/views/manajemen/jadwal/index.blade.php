@@ -53,6 +53,37 @@
     @forelse ($schedules as $s)
       @php
         $tech = $s->technician;
+        $latestTicket = $s->ticket ?? $s->machine->tickets->first();
+        $sPhotos = [];
+        if ($latestTicket) {
+            foreach ($latestTicket->media as $m) {
+                $sPhotos[] = [
+                    'url'   => $m->url,
+                    'phase' => $m->phase,
+                    'kind'  => $m->kind,
+                    'label' => $m->phase === 'after' ? 'Foto Sesudah Perbaikan' : 'Foto Sebelum / Awal'
+                ];
+            }
+        }
+        $sLogs = [];
+        if ($latestTicket) {
+            foreach ($latestTicket->logs as $l) {
+                $sLogs[] = ['label' => $l->label, 'note' => $l->note, 'time' => $l->created_at->translatedFormat('d M Y, H:i')];
+            }
+        }
+        $sPayload = [
+            'type'           => $s->type,
+            'task'           => $s->task,
+            'status'         => $s->status,
+            'display_status' => $s->display_status,
+            'formatted_date' => $s->due_date->translatedFormat('d M Y') . ($s->due_time ? ' Jam '.$s->due_time.' WIB' : ''),
+            'machine'        => ['name' => $s->machine->name, 'code' => $s->machine->code, 'location' => $s->machine->location],
+            'technician'     => $s->technician ? ['name' => $s->technician->name, 'whatsapp' => $s->technician->whatsapp] : null,
+            'ticket'         => $latestTicket ? ['action' => $latestTicket->action, 'spareparts' => $latestTicket->spareparts] : null,
+            'photos'         => $sPhotos,
+            'logs'           => $sLogs,
+            'show_url'       => route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']),
+        ];
       @endphp
       <tr>
         <td><b>{{ $s->machine->label }}</b><div class="tiny">{{ $s->machine->location }}</div></td>
@@ -84,7 +115,12 @@
         </td>
         <td>@include('partials.chip', ['v' => $s->display_status])</td>
         <td style="text-align:right">
-          <a class="link" href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}" style="font-weight:600">Detail →</a>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">
+            <button type="button" class="btn-action primary" data-schedule="{{ json_encode($sPayload) }}" onclick="openScheduleDetail(JSON.parse(this.dataset.schedule))" style="padding:4px 9px;font-size:11.5px">
+              @include('partials.icon', ['n' => 'eye']) <span>Detail</span>
+            </button>
+            <a href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}" class="tiny muted" title="Lihat profil mesin lengkap" style="padding:2px 4px;font-weight:700">↗</a>
+          </div>
         </td>
       </tr>
     @empty <tr><td colspan="7" class="empty">Belum ada jadwal.</td></tr> @endforelse
@@ -100,4 +136,6 @@
   @empty <tr><td colspan="5" class="empty">Belum ada riwayat.</td></tr> @endforelse
   </tbody></table>
 </div>
+
+@include('partials.job-detail-modal')
 @endsection

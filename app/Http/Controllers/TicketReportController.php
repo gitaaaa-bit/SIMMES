@@ -12,7 +12,9 @@ class TicketReportController extends Controller
 {
     public function create()
     {
-        return view('tiket.lapor', ['machines' => Machine::orderBy('name')->get(['code', 'name', 'location'])]);
+        return view('tiket.lapor', [
+            'machines' => Machine::orderBy('category')->orderBy('name')->get(['id', 'code', 'name', 'category', 'model', 'location'])
+        ]);
     }
 
     protected function resolveMachine(string $name, ?string $code = null, ?string $location = null): Machine
@@ -84,12 +86,14 @@ class TicketReportController extends Controller
         $user = $r->user();
 
         $ticket = Ticket::create([
-            'code' => Ticket::nextCode(), 'machine_id' => $machine->id, 'reporter_id' => $user->id,
-            // teknisi yang melapor langsung menjadi penanggung jawab
-            'technician_id' => $user->isTeknisi() ? $user->id : null,
-            'complaint' => $d['complaint'], 'urgency' => $d['urgency'],
-            'status' => $user->isTeknisi() ? 'ditugaskan' : 'dilaporkan',
-            'due_at' => now()->addDays(['tinggi' => 1, 'sedang' => 3, 'rendah' => 7][$d['urgency']]),
+            'code'          => Ticket::nextCode(),
+            'machine_id'    => $machine->id,
+            'reporter_id'   => $user->id,
+            'technician_id' => null, // Tugas terbuka: siapa cepat dia dapat!
+            'complaint'     => $d['complaint'],
+            'urgency'       => $d['urgency'],
+            'status'        => 'dilaporkan',
+            'due_at'        => now()->addDays(['tinggi' => 1, 'sedang' => 3, 'rendah' => 7][$d['urgency']]),
         ]);
         foreach ($r->file('files', []) as $f) {
             TicketMedia::create([
@@ -98,13 +102,11 @@ class TicketReportController extends Controller
                 'path' => $f->store("tickets/{$ticket->code}", 'public'),
             ]);
         }
-        $ticket->log('Dilaporkan', $user->name);
+        $ticket->log('Dilaporkan', "Laporan dibuat oleh {$user->name} ({$machine->label}) - Siapa cepat dia dapat");
         $machine->update(['status' => 'dilaporkan']);
 
         // Siarkan notifikasi laporan baru ke semua teknisi (siapa cepat dia dapat)
-        if ($ticket->technician_id === null) {
-            \App\Services\WhatsAppService::broadcastToAllTechnicians($ticket);
-        }
+        \App\Services\WhatsAppService::broadcastToAllTechnicians($ticket);
 
         $routePrefix = $user->isTeknisi() ? 'teknisi' : 'manajemen';
         return redirect()->route($routePrefix.'.lapor.sukses', $ticket);
@@ -113,9 +115,11 @@ class TicketReportController extends Controller
     public function success(Ticket $ticket)
     {
         $broadcastLink = \App\Services\WhatsAppService::makeBroadcastShareLink($ticket);
+        $technicians = \App\Models\User::where('role', 'teknisi')->where('status', 'aktif')->whereNotNull('whatsapp')->get();
         return view('tiket.sukses', [
             'ticket'        => $ticket->load('machine'),
             'broadcastLink' => $broadcastLink,
+            'technicians'   => $technicians,
         ]);
     }
 

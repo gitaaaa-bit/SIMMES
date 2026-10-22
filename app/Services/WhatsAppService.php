@@ -225,18 +225,19 @@ class WhatsAppService
     {
         $appUrl = config('app.url', url('/'));
         $due = $ticket->due_at ? $ticket->due_at->translatedFormat('d F Y, H:i') : '-';
+        $claimUrl = url("/teknisi/tugas/{$ticket->id}");
 
         return "⚡ *SIMMES - LAPORAN KERUSAKAN MESIN BARU!*\n"
-            . "_(Tugas Terbuka: Siapa Cepat Ambil Tugas)_\n\n"
+            . "*(Tugas Terbuka: Siapa Cepat Dia Dapat)*\n\n"
             . "📌 *Kode Tiket:* {$ticket->code}\n"
             . "⚙️ *Mesin:* {$ticket->machine->label}\n"
             . "📍 *Lokasi:* {$ticket->machine->location}\n"
             . "⚡ *Urgensi:* " . strtoupper($ticket->urgency) . "\n"
             . "📅 *Batas Waktu:* {$due}\n"
-            . "📝 *Keluhan:* {$ticket->complaint}\n\n"
-            . "Teknisi silakan login dan ambil tugas perbaikan ini:\n"
-            . "👉 {$appUrl}/teknisi/tugas\n\n"
-            . "Terima kasih.";
+            . "📝 *Kendala:* {$ticket->complaint}\n\n"
+            . "👉 *KLIK LINK UNTUK LANGSUNG AMBIL TUGAS:*\n"
+            . "{$claimUrl}\n\n"
+            . "*(Siapa cepat dia dapat, segera ambil tugas sebelum teknisi lain!)*";
     }
 
     /**
@@ -249,24 +250,60 @@ class WhatsAppService
     }
 
     /**
-     * Siarkan notifikasi laporan tiket baru ke semua teknisi yang terdaftar.
+     * Siarkan notifikasi laporan tiket baru ke semua teknisi yang terdaftar dan ke WA Saya (Pengelola/Teknisi).
      */
     public static function broadcastToAllTechnicians(Ticket $ticket): int
     {
-        $techs = User::where('role', 'teknisi')
-            ->where('status', 'aktif')
+        $ticket->loadMissing('machine');
+        $msg = self::buildBroadcastMessage($ticket);
+        $targets = collect();
+
+        // 1. Ambil nomor dari seluruh teknisi aktif
+        $techs = User::where(function ($q) {
+                $q->where('role', 'teknisi')
+                  ->orWhere('role', \App\Enums\Role::Teknisi);
+            })
+            ->where(function ($q) {
+                $q->where('status', 'aktif')
+                  ->orWhere('status', \App\Enums\AccountStatus::Aktif);
+            })
             ->whereNotNull('whatsapp')
+            ->where('whatsapp', '!=', '')
             ->get();
 
-        $msg = self::buildBroadcastMessage($ticket);
-        $count = 0;
-
         foreach ($techs as $t) {
-            $res = self::send($t, $msg);
-            if ($res['success']) {
+            $num = self::normalizeNumber($t->whatsapp);
+            if ($num) {
+                $targets->put($num, $t->name);
+            }
+        }
+
+        // 2. Salinan ke nomor WhatsApp Pengelola / Supervisor Utama dari .env (jika dikonfigurasi)
+        $defaultTarget = config('services.whatsapp.target') ?: env('WA_TARGET_PHONE');
+        if (!empty($defaultTarget)) {
+            $num = self::normalizeNumber($defaultTarget);
+            if ($num && !$targets->has($num)) {
+                $targets->put($num, 'Pengelola / Supervisor');
+            }
+        }
+
+        // 3. User yang sedang login jika memiliki nomor WhatsApp
+        if (auth()->check() && !empty(auth()->user()->whatsapp)) {
+            $num = self::normalizeNumber(auth()->user()->whatsapp);
+            if ($num && !$targets->has($num)) {
+                $targets->put($num, auth()->user()->name);
+            }
+        }
+
+        $count = 0;
+        foreach ($targets as $phone => $name) {
+            $res = self::send($phone, $msg);
+            if (!empty($res['success'])) {
                 $count++;
             }
         }
+
+        \Illuminate\Support\Facades\Log::info("[WhatsApp Broadcast Perbaikan Mesin] Tiket {$ticket->code} disiarkan ke {$count} nomor tujuan: " . implode(', ', array_keys($targets->toArray())));
 
         return $count;
     }

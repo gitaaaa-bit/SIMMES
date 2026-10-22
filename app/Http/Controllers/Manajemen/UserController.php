@@ -91,6 +91,11 @@ class UserController extends Controller
         }
 
         $user->update($d);
+
+        if ($r->input('from') === 'teknisi') {
+            return redirect()->route('manajemen.teknisi.index')->with('ok', "Data teknisi {$user->name} berhasil diperbarui.");
+        }
+
         return redirect()->route('manajemen.pengguna.index')->with('ok', "Data kerja {$user->name} berhasil diperbarui.");
     }
 

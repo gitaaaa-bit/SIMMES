@@ -55,15 +55,105 @@
     <thead><tr><th>Tanggal</th><th>Jenis</th><th>Foto sebelum</th><th>Foto sesudah</th><th>Status</th></tr></thead>
     <tbody>
     @forelse ($machine->tickets as $t)
-      @php $b = $t->mediaOf('before')->first(); $a = $t->mediaOf('after')->first(); @endphp
+      @php
+        $b = $t->mediaOf('before')->first() ?? $t->mediaOf('report')->first();
+        $a = $t->mediaOf('after')->first();
+        $tPhotos = [];
+        foreach ($t->media as $m) {
+            $tPhotos[] = [
+                'url'   => $m->url,
+                'phase' => $m->phase,
+                'kind'  => $m->kind,
+                'label' => $m->phase === 'after' ? 'Foto Sesudah Perbaikan' : 'Foto Sebelum / Awal'
+            ];
+        }
+        $tLogs = [];
+        foreach ($t->logs as $l) {
+            $tLogs[] = [
+                'label' => $l->label,
+                'note'  => $l->note,
+                'time'  => $l->created_at ? $l->created_at->translatedFormat('d M Y, H:i') : '-'
+            ];
+        }
+        $tPayload = [
+            'code'           => $t->code,
+            'machine'        => ['name' => $machine->name, 'code' => $machine->code, 'location' => $machine->location],
+            'status'         => $t->status,
+            'display_status' => $t->display_status,
+            'urgency'        => $t->urgency,
+            'date_formatted' => $t->created_at ? $t->created_at->translatedFormat('d M Y') : '-',
+            'complaint'      => $t->complaint,
+            'action'         => $t->action,
+            'spareparts'     => $t->spareparts,
+            'technician'     => $t->technician ? ['name' => $t->technician->name, 'whatsapp' => $t->technician->whatsapp] : null,
+            'photos'         => $tPhotos,
+            'logs'           => $tLogs,
+            'show_url'       => route('manajemen.perbaikan.show', $t),
+        ];
+        $isUnclaimed = ($t->technician_id === null && $t->status !== 'selesai');
+        $broadcastWaUrl = $isUnclaimed ? \App\Services\WhatsAppService::makeBroadcastShareLink($t) : null;
+      @endphp
       <tr>
-        <td>{{ $t->created_at->translatedFormat('d M Y') }}</td><td>{{ ucfirst($t->type) }}</td>
-        <td><div class="thumb" style="width:74px;height:56px">@if ($b)<img src="{{ $b->url }}" alt="">@else Sebelum @endif</div></td>
-        <td>@if ($a)<div class="thumb" style="width:74px;height:56px"><img src="{{ $a->url }}" alt=""></div>@else<span class="muted">Belum ada</span>@endif</td>
-        <td>@include('partials.chip', ['v' => $t->display_status])</td>
+        <td>
+          <b>{{ $t->created_at ? $t->created_at->translatedFormat('d M Y') : '-' }}</b>
+          <div class="tiny muted">{{ $t->code }}</div>
+        </td>
+        <td>{{ ucfirst($t->type) }}</td>
+        <td>
+          <div style="width:130px;height:95px;border-radius:12px;overflow:hidden;border:1.5px solid var(--line);background:#1e293b;position:relative">
+            @if ($b)
+              <a href="{{ $b->url }}" target="_blank" title="Klik untuk memperbesar">
+                <img src="{{ $b->url }}" alt="Sebelum" style="width:100%;height:100%;object-fit:cover;display:block">
+              </a>
+            @else
+              <div style="width:100%;height:100%;display:grid;place-items:center;color:#94a3b8;font-size:11px">Belum ada foto</div>
+            @endif
+          </div>
+        </td>
+        <td>
+          <div style="width:130px;height:95px;border-radius:12px;overflow:hidden;border:1.5px solid var(--line);background:#1e293b;position:relative">
+            @if ($a)
+              <a href="{{ $a->url }}" target="_blank" title="Klik untuk memperbesar">
+                <img src="{{ $a->url }}" alt="Sesudah" style="width:100%;height:100%;object-fit:cover;display:block">
+              </a>
+            @else
+              <div style="width:100%;height:100%;display:grid;place-items:center;color:#94a3b8;font-size:11px">Belum ada foto</div>
+            @endif
+          </div>
+        </td>
+        <td>
+          @if ($isUnclaimed)
+            <span class="chip" style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800">⚡ Belum Diambil</span>
+          @else
+            @include('partials.chip', ['v' => $t->display_status])
+          @endif
+
+          <div style="margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <button type="button" 
+                    class="btn-action primary" 
+                    data-ticket="{{ json_encode($tPayload) }}"
+                    onclick="openTicketDetail(JSON.parse(this.dataset.ticket))" 
+                    style="padding:4px 9px;font-size:11px">
+              @include('partials.icon', ['n' => 'eye']) <span>Detail</span>
+            </button>
+
+            @if ($isUnclaimed && $broadcastWaUrl)
+              <a href="{{ $broadcastWaUrl }}" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 class="btn-action" 
+                 style="padding:4px 8px;font-size:11px;background:#16a34a;color:#fff;border-color:transparent" 
+                 title="Siarkan Notifikasi Perbaikan ke WhatsApp Teknisi (Siapa Cepat Dia Dapat)">
+                📲 Siarkan WA
+              </a>
+            @endif
+          </div>
+        </td>
       </tr>
     @empty <tr><td colspan="5" class="empty">Belum ada riwayat.</td></tr> @endforelse
     </tbody>
   </table>
 </div>
+
+@include('partials.job-detail-modal')
 @endsection

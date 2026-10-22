@@ -20,7 +20,7 @@ class ReportController extends Controller
         $filter = $request->get('f', 'semua');
         $search = trim($request->get('q', ''));
 
-        $query = Ticket::with(['machine', 'media'])
+        $query = Ticket::with(['machine', 'media', 'logs'])
             ->where(function ($q) use ($userId) {
                 $q->where('reporter_id', $userId)
                   ->orWhere('technician_id', $userId);
@@ -41,6 +41,8 @@ class ReportController extends Controller
                   ->orWhereHas('machine', function ($m) use ($search) {
                       $m->where('code', 'like', "%{$search}%")
                         ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('category', 'like', "%{$search}%")
+                        ->orWhere('model', 'like', "%{$search}%")
                         ->orWhere('location', 'like', "%{$search}%");
                   });
             });
@@ -67,7 +69,7 @@ class ReportController extends Controller
      */
     public function create()
     {
-        $machines = Machine::orderBy('code')->get(['code', 'name', 'location']);
+        $machines = Machine::orderBy('category')->orderBy('name')->get(['id', 'code', 'name', 'category', 'model', 'location']);
         return view('teknisi.laporan.create', compact('machines'));
     }
 
@@ -159,17 +161,18 @@ class ReportController extends Controller
             default  => 7,
         };
 
+        $isClaimedImmediately = in_array($status, ['diproses', 'selesai']);
         $ticket = Ticket::create([
             'code'          => Ticket::nextCode(),
             'machine_id'    => $machine->id,
             'reporter_id'   => $user->id,
-            'technician_id' => $user->id,
+            'technician_id' => $isClaimedImmediately ? $user->id : null,
             'complaint'     => $data['complaint'],
             'urgency'       => $data['urgency'],
             'status'        => $status,
-            'progress'      => $status === 'selesai' ? 100 : ($status === 'diproses' ? 50 : 25),
+            'progress'      => $status === 'selesai' ? 100 : ($status === 'diproses' ? 50 : 0),
             'due_at'        => now()->addDays($dueDays),
-            'started_at'    => in_array($status, ['diproses', 'selesai']) ? now() : null,
+            'started_at'    => $isClaimedImmediately ? now() : null,
             'finished_at'   => $status === 'selesai' ? now() : null,
         ]);
 
@@ -184,8 +187,14 @@ class ReportController extends Controller
             }
         }
 
-        $ticket->log('Dilaporkan', "Laporan dibuat oleh teknisi {$user->name} ({$machine->label})");
+        $ticket->log('Dilaporkan', "Laporan dibuat oleh teknisi {$user->name} ({$machine->label}) - Siapa cepat dia dapat");
         $machine->update(['status' => $status === 'selesai' ? 'aktif' : 'dilaporkan']);
+
+        // Siarkan notifikasi WhatsApp ke semua teknisi
+        if ($ticket->technician_id === null) {
+            \App\Services\WhatsAppService::broadcastToAllTechnicians($ticket);
+            return redirect()->route('teknisi.lapor.sukses', $ticket);
+        }
 
         return redirect()->route('teknisi.laporan.show', $ticket)
             ->with('ok', "Laporan {$ticket->code} berhasil dibuat dan disinkronkan ke Manajemen.");
@@ -208,7 +217,7 @@ class ReportController extends Controller
     public function edit(Ticket $ticket)
     {
         $this->authorizeTicket($ticket);
-        $machines = Machine::orderBy('name')->get(['code', 'name', 'location']);
+        $machines = Machine::orderBy('category')->orderBy('name')->get(['id', 'code', 'name', 'category', 'model', 'location']);
 
         return view('teknisi.laporan.edit', compact('ticket', 'machines'));
     }
@@ -331,7 +340,13 @@ class ReportController extends Controller
      */
     public function success(Ticket $ticket)
     {
-        return view('tiket.sukses', ['ticket' => $ticket->load('machine')]);
+        $broadcastLink = \App\Services\WhatsAppService::makeBroadcastShareLink($ticket);
+        $technicians = \App\Models\User::where('role', 'teknisi')->where('status', 'aktif')->whereNotNull('whatsapp')->get();
+        return view('tiket.sukses', [
+            'ticket'        => $ticket->load('machine'),
+            'broadcastLink' => $broadcastLink,
+            'technicians'   => $technicians,
+        ]);
     }
 
     /**
@@ -340,7 +355,8 @@ class ReportController extends Controller
     protected function authorizeTicket(Ticket $ticket): void
     {
         $userId = auth()->id();
-        if ($ticket->reporter_id !== $userId && $ticket->technician_id !== $userId) {
+        // Boleh diakses jika pelapor, atau teknisi yang ditugaskan, atau jika tiket terbuka (belum diambil)
+        if ($ticket->reporter_id !== $userId && $ticket->technician_id !== $userId && $ticket->technician_id !== null) {
             abort(403, 'Anda tidak berhak mengakses laporan ini.');
         }
     }

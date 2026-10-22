@@ -18,6 +18,9 @@
         </a>
       @endif
     @endif
+    <a class="btn primary" href="{{ route('manajemen.pengguna.edit', $tech) }}">
+      @include('partials.icon', ['n' => 'edit']) Ubah Nama & Profil
+    </a>
     <a class="btn" href="{{ route('manajemen.teknisi.index') }}">← Kembali</a>
   </div>
 </div>

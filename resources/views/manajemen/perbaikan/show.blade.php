@@ -95,10 +95,19 @@
         @php
           $broadcastLink = \App\Services\WhatsAppService::makeBroadcastShareLink($ticket);
         @endphp
-        <a href="{{ $broadcastLink }}" target="_blank" rel="noopener noreferrer" class="btn block" style="background:#16a34a;color:#fff;border-color:transparent;justify-content:center;font-size:13px;font-weight:700">
-          <svg class="i" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-          Siarkan ke Grup WhatsApp Teknisi
-        </a>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <form method="POST" action="{{ route('manajemen.perbaikan.broadcastWa', $ticket) }}">
+            @csrf
+            <button type="submit" class="btn block" style="background:#0284c7;color:#fff;border-color:transparent;justify-content:center;font-size:12.5px;font-weight:700">
+              ⚡ Kirim Ulang Notifikasi ke Semua HP Teknisi (Gateway WA)
+            </button>
+          </form>
+
+          <a href="{{ $broadcastLink }}" target="_blank" rel="noopener noreferrer" class="btn block" style="background:#16a34a;color:#fff;border-color:transparent;justify-content:center;font-size:12.5px;font-weight:700">
+            <svg class="i" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            Bagikan ke Grup WhatsApp Teknisi
+          </a>
+        </div>
       </div>
     @endif
 
@@ -127,10 +136,18 @@
   <div class="card">
     <h3>Foto / video</h3>
     @foreach (['report' => 'Laporan awal', 'before' => 'Sebelum', 'after' => 'Sesudah'] as $ph => $lbl)
-      <div class="small muted" style="margin:10px 0 6px">{{ $lbl }}</div>
-      <div class="row wrap">
+      <div class="small muted" style="margin:14px 0 6px;font-weight:700">{{ $lbl }}</div>
+      <div class="row wrap" style="gap:12px">
         @forelse ($ticket->mediaOf($ph) as $m)
-          <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="">@endif</div>
+          <div style="width:100%;max-width:220px;height:170px;border-radius:14px;overflow:hidden;border:1.5px solid var(--line);position:relative;background:#000;box-shadow:0 4px 12px rgba(0,0,0,0.06)">
+            @if ($m->kind === 'video')
+              <video src="{{ $m->url }}" controls style="width:100%;height:100%;object-fit:cover"></video>
+            @else
+              <a href="{{ $m->url }}" target="_blank" rel="noopener noreferrer" title="Klik untuk memperbesar foto">
+                <img src="{{ $m->url }}" alt="{{ $lbl }}" style="width:100%;height:100%;object-fit:cover;display:block">
+              </a>
+            @endif
+          </div>
         @empty<span class="tiny">{{ $ph === 'after' ? 'Belum diunggah teknisi.' : 'Belum ada.' }}</span>@endforelse
       </div>
     @endforeach

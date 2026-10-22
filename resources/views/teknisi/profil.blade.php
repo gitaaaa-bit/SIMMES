@@ -22,7 +22,11 @@
     @csrf
     @method('PUT')
 
-    <label class="f" style="margin-top:0">Nomor WhatsApp Aktif</label>
+    <label class="f" style="margin-top:0">Nama Pengguna (Nama Lengkap)</label>
+    <input class="input" name="name" type="text" value="{{ old('name', $u->name) }}" placeholder="Contoh: Budi Santoso" required>
+    @error('name')<div class="err">{{ $message }}</div>@enderror
+
+    <label class="f" style="margin-top:14px">Nomor WhatsApp Aktif</label>
     <div style="position:relative">
       <input class="input" name="whatsapp" type="tel" value="{{ old('whatsapp', $u->whatsapp) }}" placeholder="Contoh: 081234567890 atau 6281234567890" required>
     </div>
@@ -31,11 +35,64 @@
     <label class="f" style="margin-top:14px">Bagian / Unit Kerja</label>
     <input class="input" name="bagian" value="{{ old('bagian', $u->bagian) }}" placeholder="Contoh: Mekanikal, Elektrikal">
 
-    <button type="submit" class="btn primary block" style="margin-top:16px">Simpan Profil & Nomor WA</button>
+    <button type="submit" class="btn primary block" style="margin-top:16px">Simpan Nama & Profil</button>
   </form>
+
+  <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px">
+    @if (!empty($u->whatsapp))
+      <form method="POST" action="{{ route('teknisi.profil.testWa') }}">
+        @csrf
+        <button type="submit" class="btn block" style="background:#16a34a;color:#fff;border-color:transparent;justify-content:center;font-size:12.5px;font-weight:700">
+          📲 Tes Kirim Notifikasi WhatsApp ke Nomor Saya ({{ $u->whatsapp }})
+        </button>
+      </form>
+    @else
+      <div class="card" style="background:#fefce8;border:1px solid #fef08a;padding:10px 14px;border-radius:8px;font-size:12px;color:#854d0e;text-align:center">
+        ℹ️ Silakan isi dan simpan <b>Nomor WhatsApp Aktif</b> Anda di formulir atas untuk menerima notifikasi tugas perbaikan.
+      </div>
+    @endif
+
+    <button type="button" class="btn block" onclick="testSystemAlert()" style="background:#f8fafc;color:var(--ink);justify-content:center;font-size:12px;font-weight:600">
+      🔔 Tes Notifikasi di Layar Ponsel Ini
+    </button>
+  </div>
 
 <form method="POST" action="{{ route('logout') }}" style="margin-top:16px">
   @csrf
   <button class="btn block" style="justify-content:center;color:var(--r700)">Keluar (Logout)</button>
 </form>
+
+<script>
+function testSystemAlert() {
+  if (window.Notification) {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        try {
+          new Notification("⚡ SIMMES: Notifikasi Layar Ponsel", {
+            body: "Notifikasi perbaikan mesin baru di layar ponsel Anda telah aktif!",
+            icon: "/favicon.ico"
+          });
+        } catch(e) {}
+      }
+    });
+  }
+
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    }
+  } catch(e) {}
+}
+</script>
 @endsection

@@ -46,6 +46,36 @@
 
 {{-- Daftar Laporan --}}
 @forelse ($tickets as $t)
+  @php
+    $tPhotos = [];
+    foreach ($t->media as $m) {
+        $tPhotos[] = [
+            'url'   => $m->url,
+            'phase' => $m->phase,
+            'kind'  => $m->kind,
+            'label' => $m->phase === 'after' ? 'Foto Sesudah Perbaikan' : ($m->phase === 'before' ? 'Foto Sebelum' : 'Foto Kendala Awal')
+        ];
+    }
+    $tLogs = [];
+    foreach ($t->logs as $l) {
+        $tLogs[] = ['label' => $l->label, 'note' => $l->note, 'time' => $l->created_at->translatedFormat('d M Y, H:i')];
+    }
+    $tPayload = [
+        'code'           => $t->code,
+        'machine'        => ['name' => $t->machine->name, 'code' => $t->machine->code, 'location' => $t->machine->location],
+        'status'         => $t->status,
+        'display_status' => $t->display_status,
+        'urgency'        => $t->urgency,
+        'date_formatted' => $t->created_at->translatedFormat('d M Y, H:i'),
+        'complaint'      => $t->complaint,
+        'action'         => $t->action,
+        'spareparts'     => $t->spareparts,
+        'technician'     => $t->technician ? ['name' => $t->technician->name, 'whatsapp' => $t->technician->whatsapp] : null,
+        'photos'         => $tPhotos,
+        'logs'           => $tLogs,
+        'show_url'       => route('teknisi.laporan.show', $t),
+    ];
+  @endphp
   <div class="tcard task {{ $t->urgency }}" style="margin-bottom:12px">
     <div class="t1">
       <span style="font-weight:800;color:var(--r700)">{{ $t->code }} · {{ $t->machine->code }}</span>
@@ -71,9 +101,9 @@
 
     {{-- Tombol Aksi CRUD --}}
     <div class="row between" style="border-top:1px solid var(--line);padding-top:10px;margin-top:4px">
-      <a class="btn small" href="{{ route('teknisi.laporan.show', $t) }}" style="padding:6px 12px;font-size:12px;border-radius:10px">
+      <button type="button" class="btn small" data-ticket="{{ json_encode($tPayload) }}" onclick="openTicketDetail(JSON.parse(this.dataset.ticket))" style="padding:6px 12px;font-size:12px;border-radius:10px">
         @include('partials.icon', ['n' => 'eye']) Detail
-      </a>
+      </button>
 
       <div class="row" style="gap:6px">
         <a class="btn small" href="{{ route('teknisi.laporan.edit', $t) }}" style="padding:6px 12px;font-size:12px;border-radius:10px;color:var(--warn)">
@@ -102,4 +132,6 @@
 <div class="pagination">
   {{ $tickets->links() }}
 </div>
+
+@include('partials.job-detail-modal')
 @endsection

@@ -20,7 +20,7 @@ class DashboardController extends Controller
             'terlambat'  => (clone $open)->whereNotNull('due_at')->where('due_at', '<', now())->count(),
         ];
 
-        $tickets = Ticket::with(['machine', 'technician'])->latest()->take(6)->get();
+        $tickets = Ticket::with(['machine', 'technician', 'media', 'logs'])->latest()->take(6)->get();
 
         // data kecil untuk grafik batang 6 bulan terakhir
         $trend = collect(range(5, 0))->map(function ($i) {
@@ -32,7 +32,7 @@ class DashboardController extends Controller
         });
 
         // Antrian jadwal maintenance aktif (belum selesai), yang baru dimasukkan berada di paling atas
-        $schedules = MaintenanceSchedule::with(['machine', 'technician'])
+        $schedules = MaintenanceSchedule::with(['machine.tickets.media', 'machine.tickets.logs', 'technician', 'ticket.media', 'ticket.logs'])
             ->where('status', '!=', 'selesai')
             ->latest()
             ->take(6)

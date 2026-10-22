@@ -15,7 +15,7 @@ class ScheduleController extends Controller
     public function index(Request $r)
     {
         // Antrian jadwal maintenance aktif (belum selesai), terbaru dimasukkan berada di paling atas
-        $schedules = MaintenanceSchedule::with(['machine', 'technician'])
+        $schedules = MaintenanceSchedule::with(['machine.tickets.media', 'machine.tickets.logs', 'technician', 'ticket.media', 'ticket.logs'])
             ->where('status', '!=', 'selesai')
             ->latest()
             ->get();
@@ -26,7 +26,7 @@ class ScheduleController extends Controller
             'minggu'   => $schedules->filter(fn ($s) => $s->due_date->between(now()->startOfDay(), now()->addDays(7)))->first(),
             'terjadwal'=> $schedules->filter(fn ($s) => $s->status === 'terjadwal' && $s->due_date->gt(now()->addDays(7)))->first(),
         ];
-        $history = MaintenanceSchedule::with(['machine', 'technician'])->where('status', 'selesai')->latest('completed_at')->take(10)->get();
+        $history = MaintenanceSchedule::with(['machine.tickets.media', 'machine.tickets.logs', 'technician', 'ticket.media', 'ticket.logs'])->where('status', 'selesai')->latest('completed_at')->take(10)->get();
 
         return view('manajemen.jadwal.index', compact('schedules', 'cards', 'history'));
     }
@@ -145,7 +145,12 @@ class ScheduleController extends Controller
         ]);
         $t->log('Dilaporkan', 'Dibuat dari jadwal maintenance');
         $jadwal->update(['ticket_id' => $t->id]);
-        return redirect()->route('manajemen.perbaikan.show', $t)->with('ok', "Tiket {$t->code} dibuat.");
+
+        if (empty($jadwal->technician_id)) {
+            \App\Services\WhatsAppService::broadcastToAllTechnicians($t);
+        }
+
+        return redirect()->route('manajemen.perbaikan.show', $t)->with('ok', "Tiket {$t->code} dibuat & disiarkan ke teknisi.");
     }
 
     /** "Tandai selesai" + jadwalkan siklus berikutnya otomatis. */

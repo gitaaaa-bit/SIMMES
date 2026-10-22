@@ -96,7 +96,7 @@
 
 <div class="grid g3">
   @forelse ($technicians as $t)
-    <a class="card" href="{{ route('manajemen.teknisi.show', $t) }}" style="display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;transition:all .18s ease;padding:22px">
+    <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;padding:22px">
       <div>
         <div style="display:flex;align-items:center;gap:12px">
           <div class="avatar" style="width:42px;height:42px;font-size:14px;background:#f3f4f6;color:var(--ink);border:1px solid #e5e7eb">
@@ -129,7 +129,7 @@
         </div>
       </div>
 
-      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         @if ($t->whatsapp)
           <span class="badge-wa" style="font-size:11px">
             @include('partials.icon', ['n' => 'whatsapp']) {{ $t->whatsapp }}
@@ -137,9 +137,16 @@
         @else
           <span class="badge-wa-empty">No WA belum ada</span>
         @endif
-        <span class="link small" style="font-size:12px;font-weight:600">Detail & Riwayat →</span>
+        <div class="row" style="gap:6px">
+          <a class="btn-action" href="{{ route('manajemen.pengguna.edit', $t) }}" title="Ubah nama pengguna atau data akun teknisi">
+            @include('partials.icon', ['n' => 'edit']) <span>Ubah Nama</span>
+          </a>
+          <a class="btn-action primary" href="{{ route('manajemen.teknisi.show', $t) }}">
+            <span>Detail →</span>
+          </a>
+        </div>
       </div>
-    </a>
+    </div>
   @empty
     <div class="card empty" style="grid-column:1/-1;padding:48px 24px;text-align:center">
       <div style="font-weight:600;font-size:16px;color:var(--ink2)">Belum ada teknisi terdaftar</div>

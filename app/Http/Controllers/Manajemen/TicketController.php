@@ -12,11 +12,16 @@ class TicketController extends Controller
 {
     public function index(Request $r)
     {
-        $q = Ticket::with(['machine', 'technician'])->latest();
+        $q = Ticket::with(['machine', 'technician', 'media', 'logs'])->latest();
 
         if ($s = $r->q) {
             $q->where(fn ($w) => $w->where('code', 'like', "%$s%")
-                ->orWhereHas('machine', fn ($m) => $m->where('code', 'like', "%$s%")->orWhere('name', 'like', "%$s%")));
+                ->orWhere('complaint', 'like', "%$s%")
+                ->orWhereHas('machine', fn ($m) => $m->where('code', 'like', "%$s%")
+                    ->orWhere('name', 'like', "%$s%")
+                    ->orWhere('category', 'like', "%$s%")
+                    ->orWhere('model', 'like', "%$s%")
+                    ->orWhere('location', 'like', "%$s%")));
         }
         if ($r->status === 'terlambat') {
             $q->where('status', '!=', 'selesai')->where('due_at', '<', now());
@@ -83,5 +88,19 @@ class TicketController extends Controller
 
         // Buka langsung ke WhatsApp
         return redirect()->away($waLink);
+    }
+
+    /**
+     * Siarkan notifikasi perbaikan mesin ke semua teknisi (Siapa cepat dia dapat).
+     */
+    public function broadcastWa(Ticket $ticket)
+    {
+        $ticket->load('machine');
+        $count = \App\Services\WhatsAppService::broadcastToAllTechnicians($ticket);
+        $shareLink = \App\Services\WhatsAppService::makeBroadcastShareLink($ticket);
+
+        return back()
+            ->with('ok', "Notifikasi 'Siapa Cepat Dia Dapat' berhasil disiarkan ke {$count} teknisi terdaftar.")
+            ->with('broadcast_link', $shareLink);
     }
 }

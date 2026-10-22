@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
         Route::get('perbaikan/{ticket}', [M\TicketController::class, 'show'])->name('perbaikan.show')->whereNumber('ticket');
         Route::post('perbaikan/{ticket}/tugaskan', [M\TicketController::class, 'assign'])->name('perbaikan.assign');
         Route::post('perbaikan/{ticket}/kirim-wa', [M\TicketController::class, 'notifyWa'])->name('perbaikan.notifyWa');
+        Route::post('perbaikan/{ticket}/siarkan-wa', [M\TicketController::class, 'broadcastWa'])->name('perbaikan.broadcastWa');
 
         Route::get('lapor', [TicketReportController::class, 'create'])->name('lapor');
         Route::post('lapor', [TicketReportController::class, 'store'])->name('lapor.store');
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function () {
     // ================= TEKNISI =================
     Route::middleware('role:teknisi')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::get('/', [T\HomeController::class, 'index'])->name('home');
+        Route::get('live-alerts', [T\HomeController::class, 'liveAlerts'])->name('liveAlerts');
 
         Route::get('tugas', [T\TaskController::class, 'index'])->name('tugas.index');
         Route::get('tugas/{ticket}', [T\TaskController::class, 'show'])->name('tugas.show');

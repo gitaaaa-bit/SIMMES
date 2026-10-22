@@ -7,12 +7,18 @@
     <h1>{{ $editing ? 'Ubah Data Pengguna' : 'Tambah Pengguna' }}</h1>
     <p>{{ $editing ? 'Perbarui penempatan, departemen, kontak, dan data kerja pengguna.' : 'NIK dan kata sandi awal otomatis dibuat jika dikosongkan.' }}</p>
   </div>
-  <a class="btn" href="{{ route('manajemen.pengguna.index') }}">&larr; Kembali</a>
+  @php
+    $backRoute = (request('from') === 'teknisi' || (isset($user) && $user->role === 'teknisi')) ? route('manajemen.teknisi.index') : route('manajemen.pengguna.index');
+  @endphp
+  <a class="btn" href="{{ $backRoute }}">&larr; Kembali</a>
 </div>
 
 <form class="card" style="max-width:620px" method="POST" action="{{ $editing ? route('manajemen.pengguna.update', $user) : route('manajemen.pengguna.store') }}">
   @csrf
   @if ($editing) @method('PUT') @endif
+  @if (request('from') || (isset($user) && $user->role === 'teknisi'))
+    <input type="hidden" name="from" value="{{ request('from', 'teknisi') }}">
+  @endif
 
   <label class="f" style="margin-top:0">Nama Lengkap</label>
   <input class="input" name="name" value="{{ old('name', $user->name ?? '') }}" placeholder="Nama pengguna" required>
@@ -51,8 +57,8 @@
   <div class="tiny muted" style="margin-top:4px"></div>
 
   <label class="f">Nomor WhatsApp</label>
-  <input class="input" name="whatsapp" value="{{ old('whatsapp', $user->whatsapp ?? '') }}" placeholder="">
-  <div class="tiny muted" style="margin-top:4px"></div>
+  <input class="input" name="whatsapp" value="{{ old('whatsapp', $user->whatsapp ?? '') }}" placeholder="Contoh: 081234567890 atau 6281234567890">
+  <div class="tiny muted" style="margin-top:4px">Nomor WhatsApp teknisi untuk menerima broadcast notifikasi perbaikan mesin & tugas secara otomatis.</div>
 
   <button class="btn primary block" style="margin-top:22px">{{ $editing ? 'Simpan Perubahan' : 'Simpan Pengguna' }}</button>
 </form>

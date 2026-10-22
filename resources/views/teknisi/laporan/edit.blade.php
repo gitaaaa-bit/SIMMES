@@ -9,28 +9,7 @@
   @csrf
   @method('PUT')
 
-  <label class="f" style="margin-top:0">Nama Mesin</label>
-  <input class="input" id="machine_name" name="machine_name" list="mlist" value="{{ old('machine_name', $ticket->machine->name) }}" placeholder="Contoh: Mesin Press 2, Kompresor A" autocomplete="off" required>
-  <datalist id="mlist">
-    @foreach ($machines as $m)
-      <option value="{{ $m->name }}" data-code="{{ $m->code }}" data-loc="{{ $m->location }}">{{ $m->code }} · {{ $m->location }}</option>
-    @endforeach
-  </datalist>
-  <span class="tiny" style="color:var(--ink3)">Bisa diubah secara manual jika ada koreksi nama mesin.</span>
-  @error('machine_name') <div class="err">{{ $message }}</div> @enderror
-
-  <div class="row" style="gap:10px;margin-top:12px">
-    <div style="flex:1">
-      <label class="f" style="margin-top:0">Kode Mesin (Opsional)</label>
-      <input class="input" id="machine_code" name="machine_code" value="{{ old('machine_code', $ticket->machine->code) }}" placeholder="Contoh: MSN-014">
-      @error('machine_code') <div class="err">{{ $message }}</div> @enderror
-    </div>
-    <div style="flex:1">
-      <label class="f" style="margin-top:0">Lokasi Mesin</label>
-      <input class="input" id="location" name="location" value="{{ old('location', $ticket->machine->location) }}" placeholder="Contoh: Produksi A, Gudang">
-      @error('location') <div class="err">{{ $message }}</div> @enderror
-    </div>
-  </div>
+  @include('partials.machine-picker')
 
   <label class="f" style="margin-top:14px">Keluhan / Masalah Mesin</label>
   <textarea class="textarea" name="complaint" rows="3" required>{{ old('complaint', $ticket->complaint) }}</textarea>
@@ -136,24 +115,6 @@ if (fileInput) {
       }
       previewGrid.appendChild(box);
     });
-  });
-}
-
-// Auto-fill kode & lokasi jika memilih nama mesin yang sudah terdaftar
-const mInput = document.getElementById('machine_name');
-const mCode = document.getElementById('machine_code');
-const mLoc = document.getElementById('location');
-const datalist = document.getElementById('mlist');
-
-if (mInput && datalist) {
-  mInput.addEventListener('input', function() {
-    const val = this.value.trim().toLowerCase();
-    const opts = Array.from(datalist.options);
-    const matched = opts.find(o => o.value.toLowerCase() === val);
-    if (matched) {
-      if (!mCode.value && matched.dataset.code) mCode.value = matched.dataset.code;
-      if (!mLoc.value && matched.dataset.loc) mLoc.value = matched.dataset.loc;
-    }
   });
 }
 </script>

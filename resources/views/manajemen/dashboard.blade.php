@@ -146,6 +146,39 @@
       @php
         $tech = $s->technician;
       @endphp
+      @php
+        $latestTicket = $s->ticket ?? $s->machine->tickets->first();
+        $sPhotos = [];
+        if ($latestTicket) {
+            foreach ($latestTicket->media as $m) {
+                $sPhotos[] = [
+                    'url'   => $m->url,
+                    'phase' => $m->phase,
+                    'kind'  => $m->kind,
+                    'label' => $m->phase === 'after' ? 'Foto Sesudah Perbaikan' : 'Foto Sebelum / Awal'
+                ];
+            }
+        }
+        $sLogs = [];
+        if ($latestTicket) {
+            foreach ($latestTicket->logs as $l) {
+                $sLogs[] = ['label' => $l->label, 'note' => $l->note, 'time' => $l->created_at->translatedFormat('d M Y, H:i')];
+            }
+        }
+        $sPayload = [
+            'type'           => $s->type,
+            'task'           => $s->task,
+            'status'         => $s->status,
+            'display_status' => $s->display_status,
+            'formatted_date' => $s->due_date->translatedFormat('d M Y') . ($s->due_time ? ' Jam '.$s->due_time.' WIB' : ''),
+            'machine'        => ['name' => $s->machine->name, 'code' => $s->machine->code, 'location' => $s->machine->location],
+            'technician'     => $s->technician ? ['name' => $s->technician->name, 'whatsapp' => $s->technician->whatsapp] : null,
+            'ticket'         => $latestTicket ? ['action' => $latestTicket->action, 'spareparts' => $latestTicket->spareparts] : null,
+            'photos'         => $sPhotos,
+            'logs'           => $sLogs,
+            'show_url'       => route('manajemen.mesin.show', [$s->machine, 'from' => 'dashboard']),
+        ];
+      @endphp
       <tr>
         <td style="padding:14px">
           <div style="font-weight:700;font-size:14px;color:var(--ink)">{{ $s->machine->label }}</div>
@@ -199,10 +232,10 @@
           @include('partials.chip', ['v' => $s->display_status])
         </td>
         <td style="padding:14px;text-align:right">
-          <a class="btn-action" href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'dashboard']) }}" title="Lihat riwayat dan detail mesin">
+          <button type="button" class="btn-action primary" data-schedule="{{ json_encode($sPayload) }}" onclick="openScheduleDetail(JSON.parse(this.dataset.schedule))" title="Lihat riwayat pekerjaan & foto">
             @include('partials.icon', ['n' => 'eye'])
-            <span>Detail Mesin</span>
-          </a>
+            <span>Detail</span>
+          </button>
         </td>
       </tr>
     @empty
@@ -251,6 +284,36 @@
     </thead>
     <tbody>
     @forelse ($tickets as $t)
+      @php
+        $tPhotos = [];
+        foreach ($t->media as $m) {
+            $tPhotos[] = [
+                'url'   => $m->url,
+                'phase' => $m->phase,
+                'kind'  => $m->kind,
+                'label' => $m->phase === 'after' ? 'Foto Sesudah Perbaikan' : ($m->phase === 'before' ? 'Foto Sebelum' : 'Foto Kendala Awal')
+            ];
+        }
+        $tLogs = [];
+        foreach ($t->logs as $l) {
+            $tLogs[] = ['label' => $l->label, 'note' => $l->note, 'time' => $l->created_at->translatedFormat('d M Y, H:i')];
+        }
+        $tPayload = [
+            'code'           => $t->code,
+            'machine'        => ['name' => $t->machine->name, 'code' => $t->machine->code, 'location' => $t->machine->location],
+            'status'         => $t->status,
+            'display_status' => $t->display_status,
+            'urgency'        => $t->urgency,
+            'date_formatted' => $t->created_at->translatedFormat('d M Y, H:i'),
+            'complaint'      => $t->complaint,
+            'action'         => $t->action,
+            'spareparts'     => $t->spareparts,
+            'technician'     => $t->technician ? ['name' => $t->technician->name, 'whatsapp' => $t->technician->whatsapp] : null,
+            'photos'         => $tPhotos,
+            'logs'           => $tLogs,
+            'show_url'       => route('manajemen.perbaikan.show', [$t, 'from' => 'dashboard']),
+        ];
+      @endphp
       <tr>
         <td style="padding:14px">
           <div style="font-weight:700;font-size:13.5px;color:var(--ink)">{{ $t->code }}</div>
@@ -278,10 +341,10 @@
           @include('partials.chip', ['v' => $t->display_status])
         </td>
         <td style="padding:14px;text-align:right">
-          <a class="btn-action" href="{{ route('manajemen.perbaikan.show', [$t, 'from' => 'dashboard']) }}" title="Buka rincian tiket perbaikan">
-            @include('partials.icon', ['n' => 'arrow-right'])
-            <span>Buka Tiket</span>
-          </a>
+          <button type="button" class="btn-action primary" data-ticket="{{ json_encode($tPayload) }}" onclick="openTicketDetail(JSON.parse(this.dataset.ticket))" title="Buka riwayat pekerjaan & foto">
+            @include('partials.icon', ['n' => 'eye'])
+            <span>Detail</span>
+          </button>
         </td>
       </tr>
     @empty
@@ -378,4 +441,6 @@
     </div>
   </div>
 </div>
+
+@include('partials.job-detail-modal')
 @endsection

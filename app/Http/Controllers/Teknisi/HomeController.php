@@ -55,4 +55,35 @@ class HomeController extends Controller
 
         return view('teknisi.home', compact('stats', 'priority', 'schedules', 'recent', 'reminders', 'week', 'availableCount'));
     }
+
+    /**
+     * Endpoint polling notifikasi real-time untuk teknisi.
+     */
+    public function liveAlerts()
+    {
+        $openTickets = Ticket::with('machine')
+            ->whereNull('technician_id')
+            ->where('status', '!=', 'selesai')
+            ->latest('id')
+            ->get();
+
+        $latest = $openTickets->first();
+        $openIds = $openTickets->pluck('id')->values()->all();
+
+        return response()->json([
+            'count'    => $openTickets->count(),
+            'open_ids' => $openIds,
+            'max_id'   => $openTickets->max('id') ?? 0,
+            'latest'   => $latest ? [
+                'id'           => $latest->id,
+                'code'         => $latest->code,
+                'machine'      => $latest->machine?->name ?? 'Mesin',
+                'machine_code' => $latest->machine?->code ?? '',
+                'location'     => $latest->machine?->location ?? '-',
+                'urgency'      => $latest->urgency,
+                'complaint'    => \Illuminate\Support\Str::limit($latest->complaint, 60),
+                'claim_url'    => route('teknisi.tugas.show', $latest),
+            ] : null,
+        ]);
+    }
 }

@@ -22,6 +22,11 @@
       </button>
     </form>
   </div>
+@elseif ($ticket->technician_id === auth()->id() && $ticket->status !== 'selesai')
+  <div class="tcard hero" style="background:#f0fdf4;border:1.5px solid #86efac;margin-bottom:14px;padding:14px 16px">
+    <b style="color:#15803d;font-size:14px">✓ Tugas Resmi Anda Ambil</b>
+    <div class="tiny" style="color:#166534;margin-top:2px">Tiket ini sedang dalam penanganan Anda. Lanjutkan dengan unggah foto sebelum dan proses perbaikan.</div>
+  </div>
 @endif
 
 <div class="tcard">

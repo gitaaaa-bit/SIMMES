@@ -36,8 +36,9 @@ return [
     ],
 
     'whatsapp' => [
-        'url' => env('WA_GATEWAY_URL', 'https://api.fonnte.com/send'),
-        'token' => env('WA_API_TOKEN'),
+        'url'    => env('WA_GATEWAY_URL', 'https://api.fonnte.com/send'),
+        'token'  => env('WA_API_TOKEN'),
+        'target' => env('WA_TARGET_PHONE'), // Nomor WA Pengelola/Supervisor (opsional)
     ],
 
 ];
