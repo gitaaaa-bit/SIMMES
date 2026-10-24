@@ -22,40 +22,21 @@
     @csrf
     @method('PUT')
 
-    <label class="f" style="margin-top:0">Nama Pengguna (Nama Lengkap)</label>
-    <input class="input" name="name" type="text" value="{{ old('name', $u->name) }}" placeholder="Contoh: Budi Santoso" required>
+    <label class="f" style="margin-top:0">Nama Pengguna</label>
+    <input class="input" name="name" type="text" value="{{ old('name', $u->name) }}" placeholder="" required>
     @error('name')<div class="err">{{ $message }}</div>@enderror
 
     <label class="f" style="margin-top:14px">Nomor WhatsApp Aktif</label>
     <div style="position:relative">
-      <input class="input" name="whatsapp" type="tel" value="{{ old('whatsapp', $u->whatsapp) }}" placeholder="Contoh: 081234567890 atau 6281234567890" required>
+      <input class="input" name="whatsapp" type="tel" value="{{ old('whatsapp', $u->whatsapp) }}" placeholder="" required>
     </div>
     <div class="tiny" style="margin-top:4px;color:var(--ink3)">Gunakan format nomor lokal (08...) atau internasional (628...).</div>
 
     <label class="f" style="margin-top:14px">Bagian / Unit Kerja</label>
-    <input class="input" name="bagian" value="{{ old('bagian', $u->bagian) }}" placeholder="Contoh: Mekanikal, Elektrikal">
+    <input class="input" name="bagian" value="{{ old('bagian', $u->bagian) }}" placeholder="">
 
     <button type="submit" class="btn primary block" style="margin-top:16px">Simpan Nama & Profil</button>
   </form>
-
-  <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px">
-    @if (!empty($u->whatsapp))
-      <form method="POST" action="{{ route('teknisi.profil.testWa') }}">
-        @csrf
-        <button type="submit" class="btn block" style="background:#16a34a;color:#fff;border-color:transparent;justify-content:center;font-size:12.5px;font-weight:700">
-          📲 Tes Kirim Notifikasi WhatsApp ke Nomor Saya ({{ $u->whatsapp }})
-        </button>
-      </form>
-    @else
-      <div class="card" style="background:#fefce8;border:1px solid #fef08a;padding:10px 14px;border-radius:8px;font-size:12px;color:#854d0e;text-align:center">
-        ℹ️ Silakan isi dan simpan <b>Nomor WhatsApp Aktif</b> Anda di formulir atas untuk menerima notifikasi tugas perbaikan.
-      </div>
-    @endif
-
-    <button type="button" class="btn block" onclick="testSystemAlert()" style="background:#f8fafc;color:var(--ink);justify-content:center;font-size:12px;font-weight:600">
-      🔔 Tes Notifikasi di Layar Ponsel Ini
-    </button>
-  </div>
 
 <form method="POST" action="{{ route('logout') }}" style="margin-top:16px">
   @csrf

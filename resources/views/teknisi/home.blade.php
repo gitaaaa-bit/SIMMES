@@ -9,9 +9,15 @@
     <div>
       <div style="display:flex;align-items:center;gap:6px">
         <span class="chip" style="background:#ea580c;color:#fff;font-size:11px;padding:2px 8px;font-weight:800">⚡ TERBUKA</span>
-        <b style="color:var(--r800);font-size:14.5px">{{ $availableCount }} Laporan Perbaikan Baru!</b>
+        <b style="color:var(--r800);font-size:14.5px">{{ $availableCount }} Laporan Terbuka (Belum Diambil)</b>
       </div>
-      <div class="tiny" style="color:var(--ink2);margin-top:4px">Siapa cepat dia dapat. Ambil tugas sekarang sebelum teknisi lain.</div>
+      <div class="tiny" style="color:var(--ink2);margin-top:4px">
+        @if (isset($latestAvailable) && $latestAvailable)
+          <span>Tiket <b>{{ $latestAvailable->code }}</b> ({{ $latestAvailable->machine?->name ?? 'Mesin' }}) menunggu teknisi.</span>
+        @else
+          <span>Siapa cepat dia dapat. Ambil tugas sekarang sebelum teknisi lain.</span>
+        @endif
+      </div>
     </div>
     <a class="btn primary" href="{{ route('teknisi.tugas.index', ['f' => 'tersedia']) }}" style="font-size:12.5px;padding:9px 14px;white-space:nowrap">
       Ambil Tugas

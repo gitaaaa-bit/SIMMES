@@ -145,8 +145,9 @@
     @forelse ($upcoming as $s)
       @php
         $tech = $s->technician;
-      @endphp
-      @php
+        $kindReminder = $s->display_status === 'terlambat' ? 'Terlambat' : ($s->due_date->isToday() ? 'Hari-H' : 'Pengingat');
+        $schedWaLink = ($tech && $tech->whatsapp) ? \App\Services\WhatsAppService::makeScheduleShareLink($s, $kindReminder) : null;
+
         $latestTicket = $s->ticket ?? $s->machine->tickets->first();
         $sPhotos = [];
         if ($latestTicket) {
@@ -173,6 +174,7 @@
             'formatted_date' => $s->due_date->translatedFormat('d M Y') . ($s->due_time ? ' Jam '.$s->due_time.' WIB' : ''),
             'machine'        => ['name' => $s->machine->name, 'code' => $s->machine->code, 'location' => $s->machine->location],
             'technician'     => $s->technician ? ['name' => $s->technician->name, 'whatsapp' => $s->technician->whatsapp] : null,
+            'wa_url'         => $schedWaLink,
             'ticket'         => $latestTicket ? ['action' => $latestTicket->action, 'spareparts' => $latestTicket->spareparts] : null,
             'photos'         => $sPhotos,
             'logs'           => $sLogs,
@@ -213,7 +215,11 @@
               </div>
               <div>
                 <div style="font-weight:700;font-size:13px">{{ $tech->name }}</div>
-                @if ($tech->whatsapp)
+                @if ($schedWaLink)
+                  <a href="{{ $schedWaLink }}" target="_blank" rel="noopener noreferrer" class="badge-wa" style="margin-top:2px" title="Kirim Notifikasi Jadwal Maintenance ke WhatsApp Teknisi">
+                    @include('partials.icon', ['n' => 'whatsapp']) {{ $tech->whatsapp }}
+                  </a>
+                @elseif ($tech->whatsapp)
                   <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $tech->whatsapp) }}" target="_blank" rel="noopener noreferrer" class="badge-wa" style="margin-top:2px" title="Chat WhatsApp teknisi">
                     @include('partials.icon', ['n' => 'whatsapp']) {{ $tech->whatsapp }}
                   </a>
@@ -285,6 +291,11 @@
     <tbody>
     @forelse ($tickets as $t)
       @php
+        $ticketTech = $t->technician;
+        $ticketWaLink = ($ticketTech && $ticketTech->whatsapp) 
+            ? \App\Services\WhatsAppService::makeDirectLink($ticketTech->whatsapp, \App\Services\WhatsAppService::buildTicketMessage($t, $ticketTech)) 
+            : null;
+
         $tPhotos = [];
         foreach ($t->media as $m) {
             $tPhotos[] = [
@@ -309,6 +320,7 @@
             'action'         => $t->action,
             'spareparts'     => $t->spareparts,
             'technician'     => $t->technician ? ['name' => $t->technician->name, 'whatsapp' => $t->technician->whatsapp] : null,
+            'wa_url'         => $ticketWaLink,
             'photos'         => $tPhotos,
             'logs'           => $tLogs,
             'show_url'       => route('manajemen.perbaikan.show', [$t, 'from' => 'dashboard']),
@@ -331,7 +343,12 @@
             {{ Str::limit($t->complaint, 55) }}
           </div>
           @if ($t->technician)
-            <div class="tiny muted" style="margin-top:3px">Teknisi: <b>{{ $t->technician->name }}</b></div>
+            <div class="tiny muted" style="margin-top:3px;display:flex;align-items:center;gap:5px">
+              <span>Teknisi: <b>{{ $t->technician->name }}</b></span>
+              @if ($ticketWaLink)
+                <a href="{{ $ticketWaLink }}" target="_blank" rel="noopener noreferrer" class="badge-wa" style="font-size:10px;padding:1px 5px" title="Kirim Notifikasi Tiket Perbaikan via WA">WA</a>
+              @endif
+            </div>
           @endif
         </td>
         <td style="padding:14px">
@@ -391,7 +408,7 @@
       <div class="row between" style="margin-bottom:14px;align-items:flex-start">
         <div>
           <h3 style="margin:0;font-size:16px">Integrasi Notifikasi WhatsApp Gateway</h3>
-          <div class="small muted" style="margin-top:4px">Sistem pengingat berkala otomatis ke nomor teknisi.</div>
+          <div class="small muted" style="margin-top:4px">Sistem notifikasi perbaikan & pengingat berkala ke nomor teknisi.</div>
         </div>
         <a class="link small" href="{{ route('manajemen.jadwal.index') }}" style="font-weight:700">Kelola Jadwal →</a>
       </div>
@@ -407,21 +424,28 @@
       <div style="display:grid;gap:10px;font-size:12.5px;color:var(--ink2)">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fafaf9;border-radius:8px;border:1px solid var(--line)">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="color:#10b981">✓</span>
+            <span style="color:#ef4444">🚨</span>
+            <span>Notifikasi Tiket Perbaikan Kerusakan & Siaran Cepat</span>
+          </div>
+          <span class="chip" style="font-size:10.5px;padding:2px 8px;background:#fee2e2;color:#991b1b;border-color:#fca5a5">Instan</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fafaf9;border-radius:8px;border:1px solid var(--line)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="color:#10b981">🗓️</span>
             <span>Pengingat Sebelum Jatuh Tempo (H-7 dan H-1)</span>
           </div>
           <span class="chip" style="font-size:10.5px;padding:2px 8px;background:#ecfdf5;color:#047857;border-color:#a7f3d0">Otomatis</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fafaf9;border-radius:8px;border:1px solid var(--line)">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="color:#10b981">✓</span>
+            <span style="color:#10b981">🚀</span>
             <span>Pengingat Saat Hari-H Pelaksanaan Maintenance</span>
           </div>
           <span class="chip" style="font-size:10.5px;padding:2px 8px;background:#ecfdf5;color:#047857;border-color:#a7f3d0">Sesuai Jam</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fafaf9;border-radius:8px;border:1px solid var(--line)">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="color:#ef4444">!</span>
+            <span style="color:#ef4444">⚠️</span>
             <span>Peringatan Keterlambatan Pengerjaan (Eskalasi)</span>
           </div>
           <span class="chip" style="font-size:10.5px;padding:2px 8px;background:#fff1f2;color:#be123c;border-color:#fecdd3">Prioritas</span>

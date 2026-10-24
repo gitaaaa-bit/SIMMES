@@ -143,9 +143,9 @@
             @if ($m->kind === 'video')
               <video src="{{ $m->url }}" controls style="width:100%;height:100%;object-fit:cover"></video>
             @else
-              <a href="{{ $m->url }}" target="_blank" rel="noopener noreferrer" title="Klik untuk memperbesar foto">
+              <div onclick="openPhotoZoom('{{ $m->url }}', 'Foto {{ $lbl }}')" style="cursor:zoom-in;width:100%;height:100%" title="Klik untuk memperbesar foto">
                 <img src="{{ $m->url }}" alt="{{ $lbl }}" style="width:100%;height:100%;object-fit:cover;display:block">
-              </a>
+              </div>
             @endif
           </div>
         @empty<span class="tiny">{{ $ph === 'after' ? 'Belum diunggah teknisi.' : 'Belum ada.' }}</span>@endforelse
@@ -161,4 +161,6 @@
     </ul>
   </div>
 </div>
+
+@include('partials.job-detail-modal')
 @endsection

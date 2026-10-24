@@ -51,9 +51,11 @@ class HomeController extends Controller
             'n' => Ticket::where('technician_id', $u->id)->whereDate('finished_at', now()->subDays($i))->count(),
         ]);
 
-        $availableCount = Ticket::whereNull('technician_id')->where('status', '!=', 'selesai')->count();
+        $availableTickets = Ticket::with('machine')->whereNull('technician_id')->where('status', '!=', 'selesai')->latest('id')->get();
+        $availableCount = $availableTickets->count();
+        $latestAvailable = $availableTickets->first();
 
-        return view('teknisi.home', compact('stats', 'priority', 'schedules', 'recent', 'reminders', 'week', 'availableCount'));
+        return view('teknisi.home', compact('stats', 'priority', 'schedules', 'recent', 'reminders', 'week', 'availableCount', 'latestAvailable'));
     }
 
     /**

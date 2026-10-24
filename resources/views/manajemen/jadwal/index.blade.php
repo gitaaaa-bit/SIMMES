@@ -53,6 +53,9 @@
     @forelse ($schedules as $s)
       @php
         $tech = $s->technician;
+        $kindReminder = $s->display_status === 'terlambat' ? 'Terlambat' : ($s->due_date->isToday() ? 'Hari-H' : 'Pengingat');
+        $schedWaLink = ($tech && $tech->whatsapp) ? \App\Services\WhatsAppService::makeScheduleShareLink($s, $kindReminder) : null;
+
         $latestTicket = $s->ticket ?? $s->machine->tickets->first();
         $sPhotos = [];
         if ($latestTicket) {
@@ -79,6 +82,7 @@
             'formatted_date' => $s->due_date->translatedFormat('d M Y') . ($s->due_time ? ' Jam '.$s->due_time.' WIB' : ''),
             'machine'        => ['name' => $s->machine->name, 'code' => $s->machine->code, 'location' => $s->machine->location],
             'technician'     => $s->technician ? ['name' => $s->technician->name, 'whatsapp' => $s->technician->whatsapp] : null,
+            'wa_url'         => $schedWaLink,
             'ticket'         => $latestTicket ? ['action' => $latestTicket->action, 'spareparts' => $latestTicket->spareparts] : null,
             'photos'         => $sPhotos,
             'logs'           => $sLogs,
@@ -97,7 +101,13 @@
         <td>
           @if ($tech)
             <b>{{ $tech->name }}</b>
-            <div class="tiny {{ $tech->whatsapp ? 'text-ok' : 'muted' }}">{{ $tech->whatsapp ? 'WA: '.$tech->whatsapp : 'Belum ada WA' }}</div>
+            @if ($schedWaLink)
+              <a href="{{ $schedWaLink }}" target="_blank" rel="noopener noreferrer" class="tiny text-ok" style="display:block;font-weight:600;text-decoration:none" title="Kirim Pengingat Jadwal Maintenance via WA">
+                WA: {{ $tech->whatsapp }} ↗
+              </a>
+            @else
+              <div class="tiny {{ $tech->whatsapp ? 'text-ok' : 'muted' }}">{{ $tech->whatsapp ? 'WA: '.$tech->whatsapp : 'Belum ada WA' }}</div>
+            @endif
           @else
             <form class="row" method="POST" action="{{ route('manajemen.jadwal.assign', $s) }}">@csrf
               <select class="select" name="technician_id" style="padding:5px 8px;font-size:12px;min-width:120px" onchange="this.form.submit()" required>
@@ -120,6 +130,11 @@
               @include('partials.icon', ['n' => 'eye']) <span>Detail</span>
             </button>
             <a href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}" class="tiny muted" title="Lihat profil mesin lengkap" style="padding:2px 4px;font-weight:700">↗</a>
+            @if ($schedWaLink)
+              <a href="{{ $schedWaLink }}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;margin-left:4px;color:#16a34a" title="Kirim Notifikasi Jadwal Maintenance via WA ke {{ $tech->name }}">
+                <svg class="i" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              </a>
+            @endif
           </div>
         </td>
       </tr>

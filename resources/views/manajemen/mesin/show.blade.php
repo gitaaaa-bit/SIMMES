@@ -102,9 +102,9 @@
         <td>
           <div style="width:130px;height:95px;border-radius:12px;overflow:hidden;border:1.5px solid var(--line);background:#1e293b;position:relative">
             @if ($b)
-              <a href="{{ $b->url }}" target="_blank" title="Klik untuk memperbesar">
+              <div onclick="openPhotoZoom('{{ $b->url }}', 'Foto Sebelum Perbaikan')" style="cursor:zoom-in;width:100%;height:100%" title="Klik untuk memperbesar">
                 <img src="{{ $b->url }}" alt="Sebelum" style="width:100%;height:100%;object-fit:cover;display:block">
-              </a>
+              </div>
             @else
               <div style="width:100%;height:100%;display:grid;place-items:center;color:#94a3b8;font-size:11px">Belum ada foto</div>
             @endif
@@ -113,9 +113,9 @@
         <td>
           <div style="width:130px;height:95px;border-radius:12px;overflow:hidden;border:1.5px solid var(--line);background:#1e293b;position:relative">
             @if ($a)
-              <a href="{{ $a->url }}" target="_blank" title="Klik untuk memperbesar">
+              <div onclick="openPhotoZoom('{{ $a->url }}', 'Foto Sesudah Perbaikan')" style="cursor:zoom-in;width:100%;height:100%" title="Klik untuk memperbesar">
                 <img src="{{ $a->url }}" alt="Sesudah" style="width:100%;height:100%;object-fit:cover;display:block">
-              </a>
+              </div>
             @else
               <div style="width:100%;height:100%;display:grid;place-items:center;color:#94a3b8;font-size:11px">Belum ada foto</div>
             @endif

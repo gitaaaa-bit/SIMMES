@@ -44,16 +44,10 @@ class ProfileController extends Controller
             return back()->with('err', 'Harap isi dan simpan nomor WhatsApp Anda di profil terlebih dahulu.');
         }
 
-        $appUrl = config('app.url', url('/'));
-        $testMsg = "✅ *SIMMES - TES NOTIFIKASI WHATSAPP*\n\n"
-            . "Halo *{$u->name}*,\n"
-            . "Nomor WhatsApp Anda (" . $targetNumber . ") telah berhasil tersambung dengan sistem SIMMES!\n\n"
-            . "Anda siap menerima notifikasi otomatis setiap kali ada laporan perbaikan mesin baru (siapa cepat dia dapat).\n\n"
-            . "👉 {$appUrl}/teknisi/tugas";
-
+        $testMsg = \App\Services\WhatsAppService::buildTestMessage($u);
         $directWa = \App\Services\WhatsAppService::makeDirectLink($targetNumber, $testMsg);
 
-        // Kirim juga via gateway Fonnte
+        // Kirim juga via gateway Fonnte / log
         \App\Services\WhatsAppService::send($targetNumber, $testMsg);
 
         // Buka langsung aplikasi WhatsApp

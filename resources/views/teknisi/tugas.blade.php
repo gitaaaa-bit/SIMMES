@@ -22,8 +22,8 @@
   <div class="tcard hero" style="background:linear-gradient(135deg,#fff1f3 0%,#ffe4e8 100%);border-color:var(--r300);margin-bottom:14px">
     <div class="row between" style="gap:8px">
       <div>
-        <b style="color:var(--r700);font-size:14px">⚡ Ada {{ $availableCount }} tugas perbaikan baru!</b>
-        <div class="tiny" style="color:var(--ink2)">Siapa cepat dia dapat, segera ambil tugas sebelum teknisi lain.</div>
+        <b style="color:var(--r700);font-size:14px">⚡ Ada {{ $availableCount }} tugas belum diambil teknisi</b>
+        <div class="tiny" style="color:var(--ink2)">Siapa cepat dia dapat, segera ambil tugas sebelum diambil teknisi lain.</div>
       </div>
       <a class="btn primary" href="{{ route('teknisi.tugas.index', ['f' => 'tersedia']) }}" style="font-size:12px;padding:8px 12px;white-space:nowrap">
         Ambil Cepat

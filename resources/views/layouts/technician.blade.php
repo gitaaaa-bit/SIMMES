@@ -30,28 +30,6 @@
       border: 1.5px solid #fff;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-    /* Prompt Izin Notifikasi Ponsel */
-    .phone-perm-banner {
-      background: #1e293b;
-      color: #fff;
-      padding: 8px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 11.5px;
-    }
-    .phone-perm-btn {
-      background: #22c55e;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 8px;
-      border: 0;
-      cursor: pointer;
-      white-space: nowrap;
-    }
   </style>
 </head>
 <body class="tech">
@@ -62,11 +40,6 @@
     @hasSection('sub')<div class="sub">@yield('sub')</div>@endif
   </header>
 
-  {{-- Bar Izin Notifikasi Layar Ponsel jika belum diizinkan --}}
-  <div id="phonePermBanner" class="phone-perm-banner" style="display:none">
-    <span>🔔 Aktifkan notifikasi perbaikan di layar ponsel Anda</span>
-    <button type="button" class="phone-perm-btn" onclick="enablePhoneNotifications()">Aktifkan</button>
-  </div>
 
   <div class="tbody">
     @include('partials.flash')
@@ -96,17 +69,18 @@
   // Simpan referensi notifikasi layar ponsel aktif: map of ticketId -> Notification instance
   const activePhoneNotifications = new Map();
 
-  // Cek dan tampilkan banner izin notifikasi jika belum diaktifkan
+  // Minta izin notifikasi secara halus pada interaksi pertama jika belum ditentukan
   if (window.Notification && Notification.permission === 'default') {
-    const banner = document.getElementById('phonePermBanner');
-    if (banner) banner.style.display = 'flex';
+    const askPerm = () => {
+      Notification.requestPermission();
+      document.removeEventListener('click', askPerm);
+    };
+    document.addEventListener('click', askPerm, { once: true });
   }
 
   window.enablePhoneNotifications = function() {
-    if (window.Notification) {
+    if (window.Notification && Notification.permission !== 'granted') {
       Notification.requestPermission().then(perm => {
-        const banner = document.getElementById('phonePermBanner');
-        if (banner) banner.style.display = 'none';
         if (perm === 'granted') {
           playChimeSound();
           try {

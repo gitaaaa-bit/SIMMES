@@ -121,25 +121,67 @@ class WhatsAppService
     }
 
     /**
-     * Buat teks pesan notifikasi penugasan tiket perbaikan.
+     * Buat teks pesan notifikasi penugasan tiket perbaikan (Corrective) atau tindak lanjut rutin.
      */
     public static function buildTicketMessage(Ticket $ticket, User $tech): string
     {
+        $ticket->loadMissing(['machine', 'reporter']);
         $due = $ticket->due_at ? $ticket->due_at->translatedFormat('d F Y, H:i') : '-';
         $appUrl = config('app.url', url('/'));
+        $taskUrl = "{$appUrl}/teknisi/tugas/{$ticket->id}";
+        $reporterName = $ticket->reporter?->name ?? 'Operator / Pengawas';
 
-        return "🔔 *SIMMES - NOTIFIKASI TUGAS PERBAIKAN*\n\n"
+        // 1. Jika tiket dibuat dari agenda maintenance rutin
+        if ($ticket->type === 'rutin') {
+            return "🗓️ *SIMMES - PENUGASAN TIKET MAINTENANCE RUTIN*\n"
+                . "*(Tindak Lanjut Agenda Pemeliharaan Mesin)*\n\n"
+                . "Halo *{$tech->name}*,\n"
+                . "Anda telah ditugaskan untuk mengeksekusi tiket pemeliharaan preventif berikut:\n\n"
+                . "━━━━━━━━━━━━━━━━━━━━━\n"
+                . "🎫 *Kode Tiket   :* {$ticket->code}\n"
+                . "⚙️ *Mesin Target :* {$ticket->machine->label}\n"
+                . "📍 *Area / Lokasi:* {$ticket->machine->location}\n"
+                . "🛠️ *Item Servis  :* {$ticket->complaint}\n"
+                . "📅 *Batas Target :* {$due} WIB\n"
+                . "━━━━━━━━━━━━━━━━━━━━━\n\n"
+                . "📌 *Panduan Pelaksanaan:*\n"
+                . "1. Unggah foto kondisi awal mesin (*Sebelum*) di SIMMES.\n"
+                . "2. Lakukan servis sesuai SOP & catat penggantian suku cadang.\n"
+                . "3. Unggah foto hasil akhir (*Sesudah*) & tandai 100% selesai.\n\n"
+                . "👉 *Buka Lembar Kerja Tiket:*\n"
+                . "{$taskUrl}\n\n"
+                . "_SIMMES · Sistem Informasi Maintenance Mesin_";
+        }
+
+        // 2. Tiket Perbaikan Kerusakan / Insiden (Corrective Breakdown)
+        $urgencyBadges = [
+            'tinggi' => '🔴 TINGGI (Prioritas Utama / Mesin Terhenti)',
+            'sedang' => '🟠 SEDANG (Segera Tangani Sebelum Kendala Meluas)',
+            'rendah' => '🟡 RENDAH (Penanganan Normal / Observasi)',
+        ];
+        $urgencyLabel = $urgencyBadges[$ticket->urgency] ?? strtoupper($ticket->urgency);
+
+        return "🚨 *SIMMES - PENUGASAN TIKET PERBAIKAN KERUSAKAN*\n"
+            . "*(Corrective Action / Penanganan Insiden Mesin)*\n\n"
             . "Halo *{$tech->name}*,\n"
-            . "Anda telah ditugaskan untuk menangani tiket perbaikan mesin berikut:\n\n"
-            . "📌 *Kode Tiket:* {$ticket->code}\n"
-            . "⚙️ *Mesin:* {$ticket->machine->label}\n"
-            . "📍 *Lokasi:* {$ticket->machine->location}\n"
-            . "⚡ *Urgensi:* " . strtoupper($ticket->urgency) . "\n"
-            . "📅 *Batas Waktu:* {$due}\n"
-            . "📝 *Keluhan:* {$ticket->complaint}\n\n"
-            . "Mohon segera login ke SIMMES untuk mulai pemeriksaan:\n"
-            . "👉 {$appUrl}/teknisi/tugas\n\n"
-            . "Terima kasih atas kerja samanya.";
+            . "Terdapat laporan kerusakan mesin yang ditugaskan kepada Anda:\n\n"
+            . "━━━━━━━━━━━━━━━━━━━━━\n"
+            . "🎫 *No. Tiket    :* {$ticket->code}\n"
+            . "⚙️ *Mesin Rusak  :* {$ticket->machine->label}\n"
+            . "📍 *Area / Lokasi:* {$ticket->machine->location}\n"
+            . "⚠️ *Tingkat Urgensi :* {$urgencyLabel}\n"
+            . "👤 *Pelapor      :* {$reporterName}\n"
+            . "⏰ *Batas Waktu  :* {$due} WIB\n"
+            . "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            . "💥 *Gejala / Kendala Kerusakan:*\n"
+            . "\"{$ticket->complaint}\"\n\n"
+            . "📋 *SOP Tindakan Cepat Teknisi:*\n"
+            . "1. Segera ke lokasi & utamakan prosedur K3 / LOTO.\n"
+            . "2. Ambil & unggah foto *Sebelum Perbaikan* di SIMMES.\n"
+            . "3. Lakukan analisa, perbaikan, serta catat komponen pengganti.\n\n"
+            . "👉 *Buka Lembar Kerja Perbaikan:*\n"
+            . "{$taskUrl}\n\n"
+            . "_Mohon segera ditindaklanjuti demi kelancaran operasional._";
     }
 
     /**
@@ -152,27 +194,69 @@ class WhatsAppService
     }
 
     /**
-     * Buat teks pesan pengingat jadwal pemeliharaan.
+     * Buat teks pesan pengingat jadwal pemeliharaan (Preventive Maintenance).
      */
     public static function buildScheduleMessage(MaintenanceSchedule $schedule, string $kind): string
     {
+        $schedule->loadMissing(['machine', 'technician']);
         $techName = $schedule->technician?->name ?? 'Teknisi';
-        $dueDate  = $schedule->due_date ? $schedule->due_date->translatedFormat('d F Y') : '-';
+        $dueDate  = $schedule->due_date ? $schedule->due_date->translatedFormat('l, d F Y') : '-';
         if ($schedule->due_time) {
             $dueDate .= " pukul {$schedule->due_time} WIB";
         }
-        $appUrl   = config('app.url', url('/'));
+        $appUrl      = config('app.url', url('/'));
+        $scheduleUrl = "{$appUrl}/teknisi/jadwal";
 
-        return "⏰ *SIMMES - PENGINGAT JADWAL PEMELIHARAAN ({$kind})*\n\n"
+        // Variasi Header, Sub-header, dan Instruksi berdasarkan tahap pengingat ($kind)
+        $kindLower = strtolower($kind);
+        $header = "🗓️ *SIMMES - JADWAL PEMELIHARAAN PREVENTIF*";
+        $subHeader = "*(Preventive Maintenance Terjadwal)*";
+        $instruction = "Silakan tinjau jadwal dan siapkan perlengkapan pendukung.";
+
+        if (str_contains($kindLower, 'h-7') || $kind === 'H-7') {
+            $header = "🗓️ *SIMMES - PENGINGAT H-7 PEMELIHARAAN MESIN*";
+            $subHeader = "*(Tahap: Persiapan Alat & Suku Cadang)*";
+            $instruction = "📦 *Kesiapan Awal (H-7):* Mohon pastikan ketersediaan stok oli/pelumas, filter, belt, dan alat ukur yang dibutuhkan sebelum waktu eksekusi.";
+        } elseif (str_contains($kindLower, 'h-1') || $kind === 'H-1') {
+            $header = "🗓️ *SIMMES - PENGINGAT H-1 (BESOK) PEMELIHARAAN MESIN*";
+            $subHeader = "*(Tahap: Pelaksanaan Besok)*";
+            $instruction = "⏳ *Kesiapan H-1 (Besok):* Jadwal pemeliharaan akan dilaksanakan BESOK. Harap berkoordinasi dengan operator area mesin agar line produksi siap diservis.";
+        } elseif (str_contains($kindLower, 'hari-h') || $kind === 'Hari-H') {
+            $header = "🚀 *SIMMES - AGENDA PEMELIHARAAN MESIN HARI INI*";
+            $subHeader = "*(Waktunya Pelaksanaan Servis Berkala)*";
+            $instruction = "🔧 *Pelaksanaan Hari Ini:* Jadwal jatuh pada HARI INI. Silakan ke lokasi mesin, lakukan inspeksi sesuai checklist, dan perbarui progres di SIMMES.";
+        } elseif (str_contains($kindLower, 'terlambat') || $kind === 'Terlambat') {
+            $header = "⚠️ *SIMMES - PERINGATAN: PEMELIHARAAN MELEWATI JADWAL*";
+            $subHeader = "*(Eskalasi: Melewati Tanggal Jatuh Tempo)*";
+            $instruction = "⚠️ *Peringatan Keterlambatan:* Jadwal servis ini telah melampaui tanggal jatuh tempo! Harap segera prioritaskan pengerjaan untuk mencegah downtime.";
+        } elseif (str_contains($kindLower, 'jadwal baru') || str_contains($kindLower, 'penugasan')) {
+            $header = "📋 *SIMMES - PENUGASAN JADWAL PEMELIHARAAN RUTIN*";
+            $subHeader = "*(Agenda Servis Preventif Baru)*";
+            $instruction = "✅ *Penugasan Baru:* Anda telah dijadwalkan untuk tugas pemeliharaan berkala ini. Silakan tinjau tanggal dan rincian pekerjaan di portal.";
+        }
+
+        $siklus = $schedule->interval_label 
+            ? "Tiap {$schedule->interval_label}" 
+            : ($schedule->interval_months ? "Tiap {$schedule->interval_months} bulan" : 'Rutin Berkala');
+
+        return "{$header}\n"
+            . "{$subHeader}\n\n"
             . "Halo *{$techName}*,\n"
-            . "Berikut pengingat jadwal pemeliharaan mesin:\n\n"
-            . "⚙️ *Mesin:* {$schedule->machine->label} ({$schedule->machine->location})\n"
-            . "🛠️ *Tugas:* {$schedule->task}\n"
-            . "📅 *Jatuh Tempo / Waktu:* {$dueDate}\n"
-            . "🔖 *Status:* {$kind}\n\n"
-            . "Silakan lakukan pemeriksaan dan perbarui progres di portal SIMMES:\n"
-            . "👉 {$appUrl}/teknisi/jadwal\n\n"
-            . "Terima kasih.";
+            . "Berikut rincian agenda pemeliharaan preventif yang tercatat di sistem:\n\n"
+            . "━━━━━━━━━━━━━━━━━━━━━\n"
+            . "🛠️ *Item Perawatan :* {$schedule->task}\n"
+            . "⚙️ *Mesin Target   :* {$schedule->machine->label}\n"
+            . "📍 *Area / Lokasi  :* {$schedule->machine->location}\n"
+            . "🔄 *Siklus Servis  :* {$siklus}\n"
+            . "📅 *Waktu Rencana  :* {$dueDate}\n"
+            . "🔖 *Status Pengingat:* {$kind}\n"
+            . "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            . "💡 *Petunjuk Kerja:*\n"
+            . "{$instruction}\n\n"
+            . "📊 *Tahapan Progres:* 25% Foto Awal → 50% Pengerjaan → 75% Foto Hasil → 100% Selesai\n\n"
+            . "👉 *Buka Agenda Pemeliharaan:*\n"
+            . "{$scheduleUrl}\n\n"
+            . "_Perawatan berkala rutin menjaga efisiensi dan masa pakai mesin._";
     }
 
     /**
@@ -199,22 +283,33 @@ class WhatsAppService
     }
 
     /**
-     * Kirim pesan uji coba / verifikasi ke WhatsApp teknisi.
+     * Buat teks pesan uji coba / verifikasi koneksi WhatsApp teknisi.
      */
-    public static function sendTestMessage(User $tech): array
+    public static function buildTestMessage(User $tech): string
     {
         $appUrl = config('app.url', url('/'));
         $phone  = $tech->whatsapp ?? '-';
 
-        $message = "✅ *SIMMES - TES NOTIFIKASI WHATSAPP*\n\n"
+        return "✅ *SIMMES - KONEKSI NOTIFIKASI WHATSAPP AKTIF*\n\n"
             . "Halo *{$tech->name}*,\n"
             . "Nomor WhatsApp Anda ({$phone}) telah berhasil terhubung dengan sistem SIMMES!\n\n"
-            . "Anda akan menerima notifikasi otomatis ketika:\n"
-            . "1. Terdapat tiket perbaikan mesin baru yang ditugaskan ke Anda.\n"
-            . "2. Pengingat jadwal pemeliharaan (H-7, H-1, Hari-H, dan keterlambatan).\n\n"
-            . "Portal SIMMES: {$appUrl}\n"
-            . "Terima kasih.";
+            . "Anda akan menerima 2 jenis notifikasi otomatis yang berbeda:\n\n"
+            . "1️⃣ *🚨 NOTIFIKASI TIKET PERBAIKAN (Insiden)*\n"
+            . "• Notifikasi instan saat ada kerusakan mesin tak terduga\n"
+            . "• Berisi kode tiket, pelapor, tingkat urgensi, dan keluhan kendala\n\n"
+            . "2️⃣ *🗓️ NOTIFIKASI JADWAL MAINTENANCE (Preventif)*\n"
+            . "• Notifikasi terjadwal bertahap (H-7, H-1, Hari-H, & Keterlambatan)\n"
+            . "• Berisi item checklist perawatan, siklus berkala, dan panduan persiapan\n\n"
+            . "👉 Portal SIMMES: {$appUrl}\n\n"
+            . "_SIMMES · Sistem Informasi Maintenance Mesin_";
+    }
 
+    /**
+     * Kirim pesan uji coba / verifikasi ke WhatsApp teknisi.
+     */
+    public static function sendTestMessage(User $tech): array
+    {
+        $message = self::buildTestMessage($tech);
         return self::send($tech, $message);
     }
 
@@ -223,21 +318,35 @@ class WhatsAppService
      */
     public static function buildBroadcastMessage(Ticket $ticket): string
     {
-        $appUrl = config('app.url', url('/'));
+        $ticket->loadMissing(['machine', 'reporter']);
         $due = $ticket->due_at ? $ticket->due_at->translatedFormat('d F Y, H:i') : '-';
         $claimUrl = url("/teknisi/tugas/{$ticket->id}");
+        $reporterName = $ticket->reporter?->name ?? 'Operator Lapangan';
+
+        $urgencyBadges = [
+            'tinggi' => '🔴 TINGGI (Segera Tangani)',
+            'sedang' => '🟠 SEDANG',
+            'rendah' => '🟡 RENDAH',
+        ];
+        $urgencyLabel = $urgencyBadges[$ticket->urgency] ?? strtoupper($ticket->urgency);
 
         return "⚡ *SIMMES - LAPORAN KERUSAKAN MESIN BARU!*\n"
-            . "*(Tugas Terbuka: Siapa Cepat Dia Dapat)*\n\n"
-            . "📌 *Kode Tiket:* {$ticket->code}\n"
-            . "⚙️ *Mesin:* {$ticket->machine->label}\n"
-            . "📍 *Lokasi:* {$ticket->machine->location}\n"
-            . "⚡ *Urgensi:* " . strtoupper($ticket->urgency) . "\n"
-            . "📅 *Batas Waktu:* {$due}\n"
-            . "📝 *Kendala:* {$ticket->complaint}\n\n"
+            . "*(TUGAS TERBUKA: SIAPA CEPAT DIA DAPAT)*\n\n"
+            . "Halo Rekan Teknisi,\n"
+            . "Terdapat insiden kendala mesin baru yang membutuhkan penanganan:\n\n"
+            . "━━━━━━━━━━━━━━━━━━━━━\n"
+            . "🎫 *No. Tiket    :* {$ticket->code}\n"
+            . "⚙️ *Mesin Rusak  :* {$ticket->machine->label}\n"
+            . "📍 *Area / Lokasi:* {$ticket->machine->location}\n"
+            . "⚠️ *Tingkat Urgensi :* {$urgencyLabel}\n"
+            . "👤 *Pelapor      :* {$reporterName}\n"
+            . "⏰ *Batas Waktu  :* {$due} WIB\n"
+            . "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            . "💥 *Keluhan Kerusakan:*\n"
+            . "\"{$ticket->complaint}\"\n\n"
             . "👉 *KLIK LINK UNTUK LANGSUNG AMBIL TUGAS:*\n"
             . "{$claimUrl}\n\n"
-            . "*(Siapa cepat dia dapat, segera ambil tugas sebelum teknisi lain!)*";
+            . "*(Tugas akan otomatis terkunci ke teknisi pertama yang mengambil tugas).*";
     }
 
     /**

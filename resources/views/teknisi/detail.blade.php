@@ -59,7 +59,7 @@
   <b>Foto / dokumentasi saat dilaporkan</b>
   <div class="row wrap" style="margin-top:10px">
     @foreach ($ticket->mediaOf('report') as $m)
-      <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="">@endif</div>
+      <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="" style="cursor:zoom-in" onclick="openPhotoZoom('{{ $m->url }}', 'Foto Saat Dilaporkan')">@endif</div>
     @endforeach
   </div>
 </div>
@@ -70,7 +70,7 @@
   <b>{{ $title }}</b>
   <div class="row wrap" style="margin-top:10px">
     @foreach ($ticket->mediaOf($ph) as $m)
-      <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="">@endif</div>
+      <div class="thumb">@if ($m->kind === 'video')<video src="{{ $m->url }}" controls></video>@else<img src="{{ $m->url }}" alt="" style="cursor:zoom-in" onclick="openPhotoZoom('{{ $m->url }}', '{{ $title }}')">@endif</div>
     @endforeach
     @unless ($done)
     <form method="POST" action="{{ route('teknisi.tugas.upload', $ticket) }}" enctype="multipart/form-data">@csrf
@@ -110,4 +110,6 @@
   @endif
 </div>
 @endunless
+
+@include('partials.job-detail-modal')
 @endsection

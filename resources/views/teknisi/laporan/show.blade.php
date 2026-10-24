@@ -58,9 +58,9 @@
           @if ($m->kind === 'video')
             <video src="{{ $m->url }}" controls style="width:100%;height:100%;object-fit:cover"></video>
           @else
-            <a href="{{ $m->url }}" target="_blank">
+            <div onclick="openPhotoZoom('{{ $m->url }}', 'Dokumentasi Kendala')" style="cursor:zoom-in;width:100%;height:100%" title="Klik untuk memperbesar foto">
               <img src="{{ $m->url }}" alt="Lampiran" style="width:100%;height:100%;object-fit:cover">
-            </a>
+            </div>
           @endif
         </div>
       @endforeach
@@ -108,4 +108,6 @@
     </button>
   </form>
 </div>
+
+@include('partials.job-detail-modal')
 @endsection

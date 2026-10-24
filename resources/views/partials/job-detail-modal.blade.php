@@ -6,7 +6,7 @@
     <div style="padding:18px 22px 14px;background:#fafaf9;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-          <span class="chip-dot" style="background:#b1002c;width:8px;height:8px"></span>
+          <span id="modalHeaderDot" class="chip-dot" style="background:#b1002c;width:8px;height:8px"></span>
           <h3 id="modalJobTitle" style="margin:0;font-size:17px;font-weight:800;color:var(--ink)">Riwayat Pekerjaan</h3>
           <span id="modalJobBadgeCode" class="badge-code" style="font-size:11.5px">TK-0000</span>
         </div>
@@ -47,7 +47,7 @@
 
       {{-- Bagian Tugas / Keluhan Kerusakan --}}
       <div>
-        <span class="tiny" style="font-weight:700;color:var(--r800);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">
+        <span id="modalComplaintLabel" class="tiny" style="font-weight:700;color:var(--r800);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">
           Rincian Keluhan / Tugas:
         </span>
         <div id="modalComplaintBox" style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:#881337">
@@ -111,7 +111,45 @@
   </div>
 </div>
 
+{{-- Modal Fullscreen Zoom Foto (Klik di area hitam mana saja untuk kembali ke form kecil) --}}
+<div id="photoZoomModal" 
+     class="photo-zoom-backdrop" 
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);backdrop-filter:blur(8px);z-index:100050;flex-direction:column;align-items:center;justify-content:center;padding:16px;cursor:zoom-out;-webkit-overflow-scrolling:touch"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Tinjauan Foto Diperbesar"
+     onclick="if (event.target === this) closePhotoZoom()">
+
+  {{-- Bar Atas Melayang --}}
+  <div style="position:absolute;top:16px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;z-index:100052">
+    <div style="display:flex;align-items:center;gap:10px;pointer-events:auto">
+      <span id="photoZoomBadgeLabel" class="chip" style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:12.5px;padding:6px 14px;backdrop-filter:blur(8px);font-weight:700">
+        📷 Foto Dokumentasi
+      </span>
+    </div>
+    
+   
+  </div>
+
+  {{-- Kontainer Gambar Terpusat: Klik di luar gambar (area hitam) otomatis kembali ke form kecil --}}
+  <div style="max-width:94vw;max-height:86vh;display:flex;align-items:center;justify-content:center;position:relative;cursor:default" onclick="event.stopPropagation()">
+    <img id="photoZoomImg" 
+         src="" 
+         alt="Perbesar Foto" 
+         style="max-width:92vw;max-height:84vh;width:auto;height:auto;object-fit:contain;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.95);display:block;border:1.5px solid rgba(255,255,255,0.2)">
+  </div>
+
+
 <style>
+.photo-zoom-backdrop {
+  cursor: zoom-out !important;
+}
+.photo-big-card-img-wrap {
+  cursor: zoom-in;
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
 .photo-big-card{
   border-radius:16px;
   overflow:hidden;
@@ -186,8 +224,17 @@ window.openTicketDetail = function(t) {
     const elTitle = document.getElementById('modalJobTitle');
     const elCode = document.getElementById('modalJobBadgeCode');
     const elMeta = document.getElementById('modalMachineMeta');
-    if (elTitle) elTitle.textContent = 'Riwayat Pekerjaan Perbaikan';
-    if (elCode) elCode.textContent = t.code || '-';
+    const elDot  = document.getElementById('modalHeaderDot');
+    const cLabel = document.getElementById('modalComplaintLabel');
+    const elComplaint = document.getElementById('modalComplaintBox');
+
+    if (elDot) elDot.style.background = '#b1002c';
+    if (elTitle) elTitle.textContent = 'Riwayat Perbaikan Mesin (Kerusakan)';
+    if (elCode) {
+      elCode.textContent = t.code || '-';
+      elCode.style.background = '#ffe4e6';
+      elCode.style.color = '#9f1239';
+    }
     
     const mName = t.machine ? (t.machine.name || '') : (t.machine_name || 'Mesin');
     const mCode = t.machine ? (t.machine.code || '') : (t.machine_code || '');
@@ -211,11 +258,13 @@ window.openTicketDetail = function(t) {
     const elDate = document.getElementById('modalDateVal');
     if (elDate) elDate.textContent = t.date_formatted || t.created_at || '-';
 
-    // Teknisi
+    // Teknisi & Tombol WA Perbaikan
     const techBox = document.getElementById('modalTechVal');
     if (techBox) {
       if (t.technician && t.technician.name) {
-        techBox.innerHTML = `<span>👤 <b>${t.technician.name}</b></span>` + (t.technician.whatsapp ? `<a href="https://wa.me/${String(t.technician.whatsapp).replace(/[^0-9]/g, '')}" target="_blank" class="badge-wa" style="font-size:11px;margin-left:6px">WA</a>` : '');
+        const waLink = t.wa_url || (t.technician.whatsapp ? `https://wa.me/${String(t.technician.whatsapp).replace(/[^0-9]/g, '')}` : null);
+        techBox.innerHTML = `<span>👤 <b>${t.technician.name}</b></span>` + 
+          (waLink ? `<a href="${waLink}" target="_blank" class="badge-wa" style="font-size:11px;margin-left:6px;background:#22c55e;color:#fff" title="Chat WhatsApp Format Perbaikan">📱 WA Tiket</a>` : '');
       } else if (t.technician_name) {
         techBox.innerHTML = `<span>👤 <b>${t.technician_name}</b></span>`;
       } else {
@@ -223,9 +272,17 @@ window.openTicketDetail = function(t) {
       }
     }
 
-    // Keluhan
-    const elComplaint = document.getElementById('modalComplaintBox');
-    if (elComplaint) elComplaint.textContent = t.complaint || 'Tidak ada catatan keluhan.';
+    // Keluhan Kerusakan (Merah/Alert)
+    if (cLabel) {
+      cLabel.textContent = '🚨 Rincian Keluhan / Gejala Kerusakan:';
+      cLabel.style.color = '#9f1239';
+    }
+    if (elComplaint) {
+      elComplaint.textContent = t.complaint || 'Tidak ada catatan keluhan.';
+      elComplaint.style.background = '#fff1f2';
+      elComplaint.style.borderColor = '#fecdd3';
+      elComplaint.style.color = '#881337';
+    }
 
     // Tindakan & Sparepart
     const actionContainer = document.getElementById('modalActionContainer');
@@ -287,8 +344,17 @@ window.openScheduleDetail = function(s) {
     const elTitle = document.getElementById('modalJobTitle');
     const elCode = document.getElementById('modalJobBadgeCode');
     const elMeta = document.getElementById('modalMachineMeta');
-    if (elTitle) elTitle.textContent = 'Riwayat Pekerjaan Maintenance';
-    if (elCode) elCode.textContent = s.type ? s.type.toUpperCase() : 'RUTIN';
+    const elDot  = document.getElementById('modalHeaderDot');
+    const cLabel = document.getElementById('modalComplaintLabel');
+    const elComplaint = document.getElementById('modalComplaintBox');
+
+    if (elDot) elDot.style.background = '#16a34a';
+    if (elTitle) elTitle.textContent = 'Agenda Pemeliharaan Preventif';
+    if (elCode) {
+      elCode.textContent = s.type ? s.type.toUpperCase() : 'MAINTENANCE';
+      elCode.style.background = '#dcfce7';
+      elCode.style.color = '#166534';
+    }
 
     const mName = s.machine ? (s.machine.name || '') : (s.machine_name || 'Mesin');
     const mCode = s.machine ? (s.machine.code || '') : (s.machine_code || '');
@@ -311,11 +377,13 @@ window.openScheduleDetail = function(s) {
     const elDate = document.getElementById('modalDateVal');
     if (elDate) elDate.textContent = s.formatted_date || s.due_date || '-';
 
-    // Teknisi
+    // Teknisi & Tombol WA Maintenance
     const techBox = document.getElementById('modalTechVal');
     if (techBox) {
       if (s.technician && s.technician.name) {
-        techBox.innerHTML = `<span>👤 <b>${s.technician.name}</b></span>` + (s.technician.whatsapp ? `<a href="https://wa.me/${String(s.technician.whatsapp).replace(/[^0-9]/g, '')}" target="_blank" class="badge-wa" style="font-size:11px;margin-left:6px">WA</a>` : '');
+        const waLink = s.wa_url || (s.technician.whatsapp ? `https://wa.me/${String(s.technician.whatsapp).replace(/[^0-9]/g, '')}` : null);
+        techBox.innerHTML = `<span>👤 <b>${s.technician.name}</b></span>` + 
+          (waLink ? `<a href="${waLink}" target="_blank" class="badge-wa" style="font-size:11px;margin-left:6px;background:#16a34a;color:#fff" title="Kirim Notifikasi Jadwal Maintenance ke WA">📱 WA Jadwal</a>` : '');
       } else if (s.technician_name) {
         techBox.innerHTML = `<span>👤 <b>${s.technician_name}</b></span>`;
       } else {
@@ -323,9 +391,17 @@ window.openScheduleDetail = function(s) {
       }
     }
 
-    // Tugas
-    const elComplaint = document.getElementById('modalComplaintBox');
-    if (elComplaint) elComplaint.textContent = s.task ? `Tugas: ${s.task}` : 'Pemeliharaan rutin terjadwal.';
+    // Tugas Maintenance (Hijau/Biru Harmonis)
+    if (cLabel) {
+      cLabel.textContent = '🛠️ Item Tugas Pemeliharaan Berkala:';
+      cLabel.style.color = '#166534';
+    }
+    if (elComplaint) {
+      elComplaint.textContent = s.task ? `Tugas: ${s.task}` : 'Pemeliharaan rutin terjadwal.';
+      elComplaint.style.background = '#f0fdf4';
+      elComplaint.style.borderColor = '#bbf7d0';
+      elComplaint.style.color = '#14532d';
+    }
 
     // Tindakan
     const actionContainer = document.getElementById('modalActionContainer');
@@ -399,20 +475,46 @@ function renderLargePhotos(photos) {
         <video src="${url}" controls class="photo-big-video"></video>
       `;
     } else {
+      const safeUrl = url.replace(/'/g, "\\'");
+      const safeLabel = (labelText || 'Foto Dokumentasi').replace(/'/g, "\\'").replace(/"/g, '&quot;');
       card.innerHTML = `
         <span class="photo-big-label">${labelText}</span>
-        <a href="${url}" target="_blank" rel="noopener noreferrer" style="display:block">
+        <div class="photo-big-card-img-wrap" onclick="openPhotoZoom('${safeUrl}', '${safeLabel}')" title="Klik foto untuk memperbesar">
           <img src="${url}" alt="${labelText}" class="photo-big-img" loading="lazy">
-        </a>
-        <a href="${url}" target="_blank" rel="noopener noreferrer" class="photo-big-zoom-btn">
+        </div>
+        <button type="button" class="photo-big-zoom-btn" onclick="openPhotoZoom('${safeUrl}', '${safeLabel}')" title="Klik untuk memperbesar foto">
           🔍 Perbesar Foto
-        </a>
+        </button>
       `;
     }
 
     container.appendChild(card);
   });
 }
+
+window.openPhotoZoom = function(url, label) {
+  if (!url) return;
+  const zoomModal = document.getElementById('photoZoomModal');
+  const zoomImg = document.getElementById('photoZoomImg');
+  const badgeLabel = document.getElementById('photoZoomBadgeLabel');
+
+  if (zoomImg) zoomImg.src = url;
+  if (badgeLabel) badgeLabel.textContent = label ? `📷 ${label}` : '📷 Foto Dokumentasi';
+  if (zoomModal) {
+    zoomModal.style.display = 'flex';
+  }
+};
+
+window.closePhotoZoom = function() {
+  const zoomModal = document.getElementById('photoZoomModal');
+  const zoomImg = document.getElementById('photoZoomImg');
+  if (zoomModal) {
+    zoomModal.style.display = 'none';
+  }
+  if (zoomImg) {
+    zoomImg.src = '';
+  }
+};
 
 function renderLogs(logs) {
   const list = document.getElementById('modalLogsList');
@@ -438,6 +540,7 @@ function renderLogs(logs) {
 }
 
 window.closeJobDetailModal = function() {
+  closePhotoZoom();
   const modal = document.getElementById('jobDetailModal');
   if (modal) {
     modal.style.display = 'none';
@@ -447,10 +550,28 @@ window.closeJobDetailModal = function() {
 
 // Event listener ESC dan backdrop click
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeJobDetailModal();
+  if (e.key === 'Escape') {
+    const zoomModal = document.getElementById('photoZoomModal');
+    if (zoomModal && zoomModal.style.display === 'flex') {
+      e.preventDefault();
+      closePhotoZoom();
+      return;
+    }
+    closeJobDetailModal();
+  }
 });
 
 document.addEventListener('click', function(e) {
+  // 1. Klik area hitam pada photo zoom modal -> kembali ke form kecil
+  const zoomModal = document.getElementById('photoZoomModal');
+  if (zoomModal && zoomModal.style.display === 'flex') {
+    if (e.target === zoomModal) {
+      closePhotoZoom();
+      return;
+    }
+  }
+
+  // 2. Klik backdrop luar job detail modal -> tutup form
   const modal = document.getElementById('jobDetailModal');
   if (modal && e.target === modal) {
     closeJobDetailModal();
