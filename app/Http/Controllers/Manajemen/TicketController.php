@@ -34,6 +34,7 @@ class TicketController extends Controller
         return view('manajemen.perbaikan.index', [
             'tickets'   => $q->paginate(12)->withQueryString(),
             'locations' => Machine::distinct()->orderBy('location')->pluck('location'),
+            'reportMachines' => Machine::orderBy('name')->get(['code', 'name', 'location']),
         ]);
     }
 

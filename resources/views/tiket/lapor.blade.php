@@ -6,8 +6,17 @@
   $user = auth()->user();
   $roleStr = $user->isTeknisi() ? 'teknisi' : 'manajemen';
 @endphp
-@if (!$user->isTeknisi())<div class="top"><div><h1>Laporan Perbaikan</h1></div></div>@endif
-<form class="{{ $user->isTeknisi() ? 'tcard' : 'card' }}" style="{{ !$user->isTeknisi() ? 'max-width:620px' : '' }}" method="POST" action="{{ route($roleStr.'.lapor.store') }}" enctype="multipart/form-data">@csrf
+@if (!$user->isTeknisi())
+<div style="max-width:680px;margin:0 auto">
+  <div class="top" style="margin-bottom:20px">
+    <div class="top-row">
+      <h1 style="font-size:26px">Laporan Perbaikan</h1>
+      <a class="btn" href="{{ route('manajemen.perbaikan.index') }}">← Kembali</a>
+    </div>
+    <p class="muted small" style="margin-top:2px">Laporkan kerusakan atau kendala mesin untuk ditangani teknisi</p>
+  </div>
+@endif
+<form class="{{ $user->isTeknisi() ? 'tcard' : 'card' }}" style="{{ !$user->isTeknisi() ? 'width:100%;margin:0 auto' : '' }}" method="POST" action="{{ route($roleStr.'.lapor.store') }}" enctype="multipart/form-data">@csrf
   @include('partials.machine-picker')
 
   <label class="f" style="margin-top:14px">Keluhan</label>
@@ -26,8 +35,13 @@
     <input id="lapor-file-input" type="file" name="files[]" accept="image/*,video/*" multiple hidden>
   </label>
   <div id="lapor-preview-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px"></div>
-  <button class="btn primary block" style="margin-top:22px">Kirim Laporan</button>
+  <div class="form-actions-end" style="display:flex;justify-content:flex-end;margin-top:22px">
+    <button class="btn primary btn-compact" type="submit" style="padding:10px 22px;font-size:13.5px">Kirim Laporan</button>
+  </div>
 </form>
+@if (!$user->isTeknisi())
+</div>
+@endif
 @push('scripts')
 <script>
 const fileInput = document.getElementById('lapor-file-input');

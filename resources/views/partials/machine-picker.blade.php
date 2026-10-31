@@ -1,16 +1,18 @@
 {{-- Partial Komponen Pencarian & Pemilihan Mesin Berdasarkan Kategori & Tipe --}}
 @php
-  $initName = old('machine_name', $currentMachineName ?? ($ticket->machine->name ?? ''));
-  $initCode = old('machine_code', $currentMachineCode ?? ($ticket->machine->code ?? ''));
-  $initLoc  = old('location', $currentMachineLoc ?? ($ticket->machine->location ?? ''));
-  $initCat  = $currentMachineCat ?? ($ticket->machine->category ?? '');
-  $initType = $currentMachineType ?? ($ticket->machine->model ?? '');
+  $mModel = $ticket->machine ?? ($schedule->machine ?? ($machine ?? null));
+  $initId   = old('machine_id', $currentMachineId ?? ($mModel->id ?? ''));
+  $initName = old('machine_name', $currentMachineName ?? ($mModel->name ?? ''));
+  $initCode = old('machine_code', $currentMachineCode ?? ($mModel->code ?? ''));
+  $initLoc  = old('location', $currentMachineLoc ?? ($mModel->location ?? ''));
+  $initCat  = $currentMachineCat ?? ($mModel->category ?? '');
+  $initType = $currentMachineType ?? ($mModel->model ?? '');
 @endphp
 
 <div class="machine-picker-container" id="machine-picker-root" style="position:relative">
+  <input type="hidden" name="machine_id" id="machine_id" value="{{ $initId }}">
   <div class="row between" style="margin-bottom:6px">
     <label class="f" style="margin:0;font-weight:700">Nama Mesin</label>
-    <span class="tiny muted" id="machine-source-indicator">🔍 Cari berdasarkan nama, tipe, atau kategori</span>
   </div>
 
   <div style="position:relative">
@@ -19,7 +21,7 @@
              id="machine_name" 
              name="machine_name" 
              value="{{ $initName }}" 
-             placeholder="Ketik kata kunci untuk mencari mesin (misal: Press, CNC, Pompa)..." 
+             placeholder="Cari mesin (minimal 2 huruf, misal: Press, CNC, Pompa)..."
              autocomplete="off" 
              required
              style="padding-right:38px">
@@ -43,7 +45,7 @@
       <div id="machine-search-hint" style="padding:18px 14px;text-align:center;color:var(--ink2)">
         <div style="font-size:24px;margin-bottom:4px">⌨️</div>
         <b style="font-size:13.5px;color:var(--ink);display:block">Masukkan Kata Kunci Mesin</b>
-        <span class="tiny muted">Ketik minimal 1 karakter untuk menampilkan nama mesin beserta tipe & kategorinya. Tidak menampilkan semua database sekaligus agar lebih rapi.</span>
+        <span class="tiny muted">Ketik minimal 1 karakter untuk menampilkan nama mesin beserta tipe & kategorinya.</span>
       </div>
 
       {{-- Wadah Daftar Mesin Berkategori --}}
@@ -89,13 +91,11 @@
     <div style="flex:1">
       <label class="f" style="margin-top:0">Kode Mesin (Opsional)</label>
       <input class="input" id="machine_code" name="machine_code" value="{{ $initCode }}" placeholder="Contoh: MSN-014">
-      <span class="tiny" style="color:var(--ink3)">Otomatis diisi dari database jika memilih mesin yang sudah ada</span>
       @error('machine_code') <div class="err">{{ $message }}</div> @enderror
     </div>
     <div style="flex:1">
       <label class="f" style="margin-top:0">Lokasi Mesin</label>
       <input class="input" id="location" name="location" value="{{ $initLoc }}" placeholder="Contoh: Produksi A, Lantai 1">
-      <span class="tiny" style="color:var(--ink3)">Area penempatan mesin</span>
       @error('location') <div class="err">{{ $message }}</div> @enderror
     </div>
   </div>
@@ -154,11 +154,13 @@
 .machine-item-row.active{
   background:var(--rose100);
 }
+#machine-category-chips,#machine-search-hint{display:none!important}
 </style>
 
 <script>
 (function() {
   const machinesData = @json($machines ?? []);
+  const idInput = document.getElementById('machine_id');
   const input = document.getElementById('machine_name');
   const codeInput = document.getElementById('machine_code');
   const locInput = document.getElementById('location');
@@ -169,55 +171,19 @@
   const notFoundTerm = document.getElementById('not-found-term');
   const btnClear = document.getElementById('btn-clear-machine');
   const btnUseNew = document.getElementById('btn-use-new-machine');
-  const categoryChipsBox = document.getElementById('machine-category-chips');
   const badge = document.getElementById('selected-machine-badge');
   const badgeName = document.getElementById('badge-machine-name');
   const badgeType = document.getElementById('badge-machine-type');
   const btnChange = document.getElementById('btn-change-machine');
 
-  let activeCategory = 'all';
-
   if (!input || !dropdown) return;
-
-  // 1. Ekstrak kategori unik dari data mesin
-  const categories = Array.from(new Set(
-    machinesData.map(m => (m.category && m.category.trim()) ? m.category.trim() : 'Umum / Lainnya')
-  )).sort();
-
-  // Render chip kategori
-  categories.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-cat-chip';
-    btn.dataset.cat = cat;
-    btn.textContent = cat;
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setCategory(cat);
-    });
-    categoryChipsBox.appendChild(btn);
-  });
-
-  const allChip = categoryChipsBox.querySelector('[data-cat="all"]');
-  if (allChip) {
-    allChip.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setCategory('all');
-    });
-  }
-
-  function setCategory(cat) {
-    activeCategory = cat;
-    categoryChipsBox.querySelectorAll('.btn-cat-chip').forEach(b => {
-      b.classList.toggle('on', b.dataset.cat === cat);
-    });
-    renderResults();
-  }
 
   // 2. Tampilkan dropdown ketika input diklik / fokus
   input.addEventListener('focus', function() {
-    dropdown.style.display = 'block';
-    renderResults();
+    if (this.value.trim().length >= 2) {
+      dropdown.style.display = 'block';
+      renderResults();
+    }
   });
 
   // Tombol ganti
@@ -225,27 +191,39 @@
     btnChange.addEventListener('click', function() {
       input.focus();
       input.select();
-      dropdown.style.display = 'block';
-      renderResults();
+      if (input.value.trim().length >= 2) {
+        dropdown.style.display = 'block';
+        renderResults();
+      }
     });
   }
 
   // Input listener
   input.addEventListener('input', function() {
+    if (idInput) idInput.value = '';
     if (btnClear) {
       btnClear.style.display = this.value.trim() ? 'block' : 'none';
     }
-    dropdown.style.display = 'block';
-    renderResults();
+    if (this.value.trim().length >= 2) {
+      dropdown.style.display = 'block';
+      renderResults();
+    } else {
+      dropdown.style.display = 'none';
+      resultsList.style.display = 'none';
+      notFound.style.display = 'none';
+    }
   });
 
   if (btnClear) {
     btnClear.addEventListener('click', function() {
       input.value = '';
+      if (idInput) idInput.value = '';
+      if (codeInput) codeInput.value = '';
+      if (locInput) locInput.value = '';
       this.style.display = 'none';
       if (badge) badge.style.display = 'none';
       input.focus();
-      renderResults();
+      dropdown.style.display = 'none';
     });
   }
 
@@ -253,6 +231,7 @@
   if (btnUseNew) {
     btnUseNew.addEventListener('click', function(e) {
       e.preventDefault();
+      if (idInput) idInput.value = '';
       dropdown.style.display = 'none';
       updateBadge(input.value.trim(), 'Mesin Baru Ditambahkan');
     });
@@ -272,8 +251,7 @@
     // Sesuai permintaan user:
     // "ketika di sorting, saya ingin ketika shotingnya itu tidak semua tampil yang ada di database,
     // tapi ketika memasukkan kata kunci baru keluar nama mesin dengan tipe yang sesuai bisa di buat perkategori"
-    if (!q && activeCategory === 'all') {
-      hint.style.display = 'block';
+    if (q.length < 2) {
       resultsList.style.display = 'none';
       notFound.style.display = 'none';
       return;
@@ -283,12 +261,6 @@
 
     // Filter mesin sesuai query & kategori
     const filtered = machinesData.filter(m => {
-      const mCat = (m.category && m.category.trim()) ? m.category.trim() : 'Umum / Lainnya';
-      if (activeCategory !== 'all' && mCat !== activeCategory) {
-        return false;
-      }
-      if (!q) return true;
-
       const nameMatch = (m.name || '').toLowerCase().includes(q);
       const codeMatch = (m.code || '').toLowerCase().includes(q);
       const modelMatch = (m.model || '').toLowerCase().includes(q);
@@ -353,6 +325,7 @@
   }
 
   function selectMachine(m) {
+    if (idInput) idInput.value = m.id || '';
     input.value = m.name;
     if (codeInput) codeInput.value = m.code || '';
     if (locInput) locInput.value = m.location || '';

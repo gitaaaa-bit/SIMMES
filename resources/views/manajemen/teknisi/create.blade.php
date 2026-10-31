@@ -2,11 +2,11 @@
 @section('title', 'Tambah Teknisi')
 @section('content')
 <div class="top">
-  <div>
+  <div class="top-row">
     <h1>Tambah Teknisi</h1>
-    <p>Lengkapi formulir di bawah untuk mendaftarkan akun teknisi baru.</p>
+    <a class="btn" href="{{ route('manajemen.teknisi.index') }}" style="background:#fff">← Kembali</a>
   </div>
-  <a class="btn" href="{{ route('manajemen.teknisi.index') }}" style="background:#fff">← Kembali</a>
+  <p class="muted small">Lengkapi formulir di bawah untuk mendaftarkan akun teknisi baru.</p>
 </div>
 
 <form class="card" style="max-width:620px" method="POST" action="{{ route('manajemen.teknisi.store') }}">
@@ -62,7 +62,9 @@
     </div>
   </div>
 
-  <button type="submit" class="btn primary block" style="margin-top:24px">Simpan Teknisi</button>
+  <div class="form-actions-end" style="margin-top:24px">
+    <button type="submit" class="btn primary btn-compact">Simpan Teknisi</button>
+  </div>
 </form>
 
 <script>

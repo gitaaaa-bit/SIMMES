@@ -22,7 +22,7 @@ class DashboardController extends Controller
 
         $tickets = Ticket::with(['machine', 'technician', 'media', 'logs'])->latest()->take(6)->get();
 
-        // data kecil untuk grafik batang 6 bulan terakhir
+        // Data distribusi tiket untuk grafik donut enam bulan terakhir.
         $trend = collect(range(5, 0))->map(function ($i) {
             $m = now()->subMonths($i);
             return [
@@ -31,15 +31,21 @@ class DashboardController extends Controller
             ];
         });
 
-        // Antrian jadwal maintenance aktif (belum selesai), yang baru dimasukkan berada di paling atas
-        $schedules = MaintenanceSchedule::with(['machine.tickets.media', 'machine.tickets.logs', 'technician', 'ticket.media', 'ticket.logs'])
+        // Pekerjaan yang masih perlu dilakukan; siklus baru otomatis masuk ke sini setelah periode sebelumnya selesai.
+        $upcoming = MaintenanceSchedule::with(['machine.tickets.media', 'machine.tickets.logs', 'technician', 'ticket.media', 'ticket.logs'])
             ->where('status', '!=', 'selesai')
-            ->latest()
+            ->orderBy('due_date')
+            ->orderBy('due_time')
             ->take(6)
             ->get();
 
-        $upcoming = $schedules;
+        // Riwayat pekerjaan yang sudah dituntaskan, dipisahkan dari antrian aktif.
+        $completedSchedules = MaintenanceSchedule::with(['machine', 'technician'])
+            ->where('status', 'selesai')
+            ->latest('completed_at')
+            ->take(6)
+            ->get();
 
-        return view('manajemen.dashboard', compact('stats', 'tickets', 'trend', 'upcoming', 'schedules'));
+        return view('manajemen.dashboard', compact('stats', 'tickets', 'trend', 'upcoming', 'completedSchedules'));
     }
 }

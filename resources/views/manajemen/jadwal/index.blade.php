@@ -6,9 +6,6 @@
     <h1>Jadwal Maintenance</h1>
     <p class="muted small">Antrian jadwal pemeliharaan mesin (terbaru dimasukkan berada di atas).</p>
   </div>
-  <a class="btn primary" href="{{ route('manajemen.jadwal.create') }}">
-    @include('partials.icon', ['n' => 'plus']) Tambah Jadwal
-  </a>
 </div>
 @include('manajemen.jadwal._tabs')
 
@@ -18,21 +15,23 @@
     <span class="chip c-terlambat" style="align-self:flex-start">Lewat jadwal</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
     <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
-    <form method="POST" action="{{ route('manajemen.jadwal.tiket', $s) }}">@csrf<button class="btn primary">Buat tiket</button></form>
+    <form method="POST" action="{{ route('manajemen.jadwal.tiket', $s) }}" style="display:flex;justify-content:flex-end;margin-top:auto">@csrf<button class="btn primary btn-compact">Buat tiket</button></form>
   </div>@endif
   @if ($s = $cards['minggu'])
   <div class="card sched-card" style="border-top:5px solid var(--r400)">
     <span class="chip c-minggu" style="align-self:flex-start">Minggu ini</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
     <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
-    <form method="POST" action="{{ route('manajemen.jadwal.selesai', $s) }}">@csrf<button class="btn dark">Tandai selesai</button></form>
+    <form method="POST" action="{{ route('manajemen.jadwal.selesai', $s) }}" style="display:flex;justify-content:flex-end;margin-top:auto">@csrf<button class="btn dark btn-compact">Tandai selesai</button></form>
   </div>@endif
   @if ($s = $cards['terjadwal'])
   <div class="card sched-card" style="border-top:5px solid #d9cfd1">
     <span class="chip c-terjadwal" style="align-self:flex-start">Terjadwal</span>
     <h4>{{ $s->machine->label }}</h4><div class="muted">{{ $s->task }}{{ $s->interval_label ? ', '.$s->interval_label : '' }}</div>
     <div>Jatuh tempo: <b>{{ $s->due_date->translatedFormat('d M Y') }} {{ $s->due_time ? '· Jam '.$s->due_time : '' }}</b></div>
-    <a class="btn" href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}">Lihat riwayat</a>
+    <div style="display:flex;justify-content:flex-end;margin-top:auto">
+      <a class="btn btn-compact" href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}">Lihat riwayat</a>
+    </div>
   </div>@endif
 </div>
 

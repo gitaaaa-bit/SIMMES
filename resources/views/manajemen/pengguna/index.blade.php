@@ -1,8 +1,13 @@
 @extends('layouts.manager')
 @section('title', 'Pengguna')
 @section('content')
-<div class="top"><div><h1>Pengguna</h1><p>Kelola akun dan data penempatan kerja pengguna.</p></div>
-  <a class="btn primary" href="{{ route('manajemen.pengguna.create') }}">@include('partials.icon', ['n' => 'plus']) Tambah Pengguna</a></div>
+<div class="top">
+  <div class="top-row">
+    <h1>Pengguna</h1>
+    <a class="btn primary" href="{{ route('manajemen.pengguna.create') }}">@include('partials.icon', ['n' => 'plus']) Tambah Pengguna</a>
+  </div>
+  <p class="muted small">Kelola akun dan data penempatan kerja pengguna.</p>
+</div>
 
 <h3 style="margin-bottom:10px;font-size:18px">Menunggu Persetujuan ({{ $pending->count() }})</h3>
 <div class="card tablewrap" style="margin-bottom:26px">

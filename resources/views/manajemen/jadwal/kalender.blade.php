@@ -1,8 +1,12 @@
 @extends('layouts.manager')
 @section('title', 'Kalender Maintenance')
 @section('content')
-<div class="top"><div><h1>Jadwal Maintenance</h1></div>
-  <a class="btn primary" href="{{ route('manajemen.jadwal.create') }}">@include('partials.icon', ['n' => 'plus']) Tambah Jadwal</a></div>
+<div class="top">
+  <div>
+    <h1>Kalender Maintenance</h1>
+    <p class="muted small">Tampilan kalender jadwal pemeliharaan mesin bulanan.</p>
+  </div>
+</div>
 @include('manajemen.jadwal._tabs')
 @php
   $lead = $month->dayOfWeekIso - 1;           // kolom kosong sebelum tanggal 1 (Senin = 0)

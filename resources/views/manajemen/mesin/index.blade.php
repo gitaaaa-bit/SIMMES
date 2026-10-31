@@ -2,13 +2,15 @@
 @section('title', 'Data Mesin')
 @section('content')
 <div class="top">
-  <div><h1>Data Mesin</h1></div>
-  <div class="actions">
-    <form id="imp" method="POST" action="{{ route('manajemen.mesin.import') }}" enctype="multipart/form-data">@csrf
-      <input type="file" name="file" accept=".csv,text/csv" hidden onchange="this.form.submit()">
-      <button type="button" class="btn" onclick="this.previousElementSibling.click()" title="Format CSV: kode,nama,kategori,tipe,serial,tgl_beli,lokasi,interval_bulan">Import Excel (CSV)</button>
-    </form>
-    <a class="btn primary" href="{{ route('manajemen.mesin.create') }}">@include('partials.icon', ['n' => 'plus']) Tambah Mesin</a>
+  <div class="top-row">
+    <h1>Data Mesin</h1>
+    <div class="actions">
+      <form id="imp" method="POST" action="{{ route('manajemen.mesin.import') }}" enctype="multipart/form-data">@csrf
+        <input type="file" name="file" accept=".csv,text/csv" hidden onchange="this.form.submit()">
+        <button type="button" class="btn" onclick="this.previousElementSibling.click()" title="Format CSV: kode,nama,kategori,tipe,serial,tgl_beli,lokasi,interval_bulan">Import Excel (CSV)</button>
+      </form>
+      @include('partials.quick-machine-modal')
+    </div>
   </div>
 </div>
 <form class="filters" method="GET">

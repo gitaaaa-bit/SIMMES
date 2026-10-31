@@ -27,8 +27,10 @@ class ScheduleController extends Controller
             'terjadwal'=> $schedules->filter(fn ($s) => $s->status === 'terjadwal' && $s->due_date->gt(now()->addDays(7)))->first(),
         ];
         $history = MaintenanceSchedule::with(['machine.tickets.media', 'machine.tickets.logs', 'technician', 'ticket.media', 'ticket.logs'])->where('status', 'selesai')->latest('completed_at')->take(10)->get();
+        $machines = Machine::orderBy('category')->orderBy('name')->get(['id', 'code', 'name', 'category', 'model', 'location']);
+        $technicians = User::where('role', 'teknisi')->where('status', 'aktif')->orderBy('name')->get();
 
-        return view('manajemen.jadwal.index', compact('schedules', 'cards', 'history'));
+        return view('manajemen.jadwal.index', compact('schedules', 'cards', 'history', 'machines', 'technicians'));
     }
 
     public function calendar(Request $r)
@@ -48,7 +50,7 @@ class ScheduleController extends Controller
     public function create()
     {
         return view('manajemen.jadwal.form', [
-            'machines'    => Machine::orderBy('code')->get(),
+            'machines'    => Machine::orderBy('category')->orderBy('name')->get(['id', 'code', 'name', 'category', 'model', 'location']),
             'technicians' => User::where('role', 'teknisi')->where('status', 'aktif')->orderBy('name')->get(),
         ]);
     }
@@ -57,9 +59,12 @@ class ScheduleController extends Controller
     {
         $d = $r->validate([
             'machine_id'           => 'nullable',
+            'machine_name'         => 'nullable|string|max:120',
+            'machine_code'         => 'nullable|string|max:50',
+            'location'             => 'nullable|string|max:120',
             'machine_source'       => 'nullable|in:database,manual',
             'new_machine_name'     => 'nullable|string|max:120',
-            'new_machine_code'     => 'nullable|string|max:50',
+            'new_machine_code'     => ['nullable', 'string', 'max:50'],
             'new_machine_location' => 'nullable|string|max:120',
             'task'                 => 'required|max:120',
             'type'                 => 'required|in:rutin,insiden',
@@ -69,22 +74,54 @@ class ScheduleController extends Controller
             'technician_id'        => 'nullable|exists:users,id',
         ]);
 
-        // Resolusi mesin: pilih dari database ATAU buat mesin baru dari input manual
+        // Resolusi mesin: pilih dari machine_id atau machine-picker atau input manual
         $machine = null;
-        if ($r->input('machine_source') === 'manual' || !empty($d['new_machine_name']) || empty($d['machine_id'])) {
-            if (empty($d['new_machine_name'])) {
-                return back()->withInput()->with('error', 'Silakan isi Nama Mesin (input manual) atau pilih mesin dari database.');
-            }
-            $machine = Machine::findOrCreateByName(
-                $d['new_machine_name'],
-                $d['new_machine_code'] ?? null,
-                $d['new_machine_location'] ?? 'Workshop'
-            );
-        } else {
+
+        if (!empty($d['machine_id'])) {
             $machine = Machine::find($d['machine_id']);
-            if (!$machine) {
-                return back()->withInput()->with('error', 'Mesin yang dipilih tidak ditemukan di database.');
+        }
+
+        $mName = trim($d['machine_name'] ?? $d['new_machine_name'] ?? '');
+        $mCode = strtoupper(trim($d['machine_code'] ?? $d['new_machine_code'] ?? ''));
+        $mLoc  = trim($d['location'] ?? $d['new_machine_location'] ?? 'Area Operasional');
+
+        if (!$machine && !empty($mCode)) {
+            $machine = Machine::where('code', $mCode)->first();
+            if ($machine && !empty($mName) && $machine->name !== $mName) {
+                $machine->update(['name' => $mName, 'location' => $mLoc ?: $machine->location]);
             }
+        }
+
+        if (!$machine && !empty($mName)) {
+            $machine = Machine::where('name', $mName)->first();
+            if ($machine) {
+                if (!empty($mCode) && $machine->code !== $mCode) $machine->update(['code' => $mCode]);
+                if (!empty($mLoc)) $machine->update(['location' => $mLoc]);
+            }
+        }
+
+        if (!$machine && !empty($mName)) {
+            if (empty($mCode)) {
+                $letters = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $mName));
+                $prefix = 'MC-' . (substr($letters, 0, 3) ?: 'MSN');
+                $count = Machine::where('code', 'like', "{$prefix}%")->count() + 1;
+                $mCode = "{$prefix}-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+                while (Machine::where('code', $mCode)->exists()) {
+                    $count++;
+                    $mCode = "{$prefix}-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+                }
+            }
+
+            $machine = Machine::create([
+                'name'     => $mName,
+                'code'     => $mCode,
+                'location' => $mLoc ?: 'Area Operasional',
+                'status'   => 'aktif',
+            ]);
+        }
+
+        if (!$machine) {
+            return back()->withInput()->with('error', 'Silakan cari dan pilih mesin terlebih dahulu.');
         }
 
         $scheduleData = [

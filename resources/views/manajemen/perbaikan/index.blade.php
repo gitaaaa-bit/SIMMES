@@ -2,8 +2,12 @@
 @section('title', 'Perbaikan')
 @section('content')
 <div class="top">
-  <div><h1>Perbaikan</h1></div>
-  <a class="btn primary" href="{{ route('manajemen.lapor') }}">@include('partials.icon', ['n' => 'plus']) Lapor</a>
+  <div class="top-row">
+    <h1>Perbaikan</h1>
+    <div class="actions">
+      @include('partials.quick-report-modal', ['machines' => $reportMachines])
+    </div>
+  </div>
 </div>
 <form class="filters" method="GET">
   <input class="input" name="q" value="{{ request('q') }}" placeholder="Cari kode tiket atau mesin">

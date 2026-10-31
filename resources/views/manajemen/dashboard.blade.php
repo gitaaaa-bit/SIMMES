@@ -17,7 +17,7 @@
     <a class="btn primary" href="{{ route('manajemen.jadwal.create') }}">
       @include('partials.icon', ['n' => 'plus']) Buat Jadwal Baru
     </a>
-    <a class="btn" href="{{ route('manajemen.lapor') }}" style="background:#fff">
+    <a class="btn" href="{{ route('manajemen.perbaikan.index') }}" style="background:#fff">
       @include('partials.icon', ['n' => 'wrench']) Lapor Kerusakan
     </a>
     <a class="btn" href="{{ route('manajemen.laporan.index') }}" style="background:#fff">
@@ -110,13 +110,13 @@
   <div class="row between dashboard-section-head" style="margin-bottom:16px;align-items:flex-start">
     <div class="dashboard-section-title">
       <div class="dashboard-title-line" style="display:flex;align-items:center;gap:10px">
-        <h2 style="margin:0;font-size:18px">Antrian Jadwal Maintenance</h2>
+        <h2 style="margin:0;font-size:18px">Maintenance yang Akan Dikerjakan</h2>
         <span class="chip" style="background:#fffbeb;color:#b45309;border-color:#fde68a;font-size:11.5px">
           <span class="chip-dot" style="background:#f59e0b"></span> Urutan Terdekat & Terkini
         </span>
       </div>
       <div class="small muted" style="margin-top:4px">
-        Daftar pemeliharaan preventif yang harus segera dikerjakan oleh teknisi sesuai tenggat waktu.
+        Hanya pekerjaan yang masih aktif. Jadwal siklus berikutnya ditampilkan sebagai rencana baru, bukan pekerjaan yang belum selesai.
       </div>
     </div>
     <div class="row dashboard-section-actions" style="gap:8px">
@@ -130,7 +130,7 @@
     </div>
   </div>
 
-  <table style="width:100%;border-collapse:collapse">
+  <table class="dashboard-table">
     <thead>
       <tr style="background:#fafaf9">
         <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Mesin & Lokasi</th>
@@ -247,8 +247,68 @@
     @empty
       <tr>
         <td colspan="6" class="empty" style="padding:36px 20px">
-          <div style="font-weight:600;color:var(--ink2)">Belum ada antrian jadwal maintenance aktif</div>
-          <div class="small muted" style="margin-top:4px">Seluruh jadwal telah diselesaikan atau belum ada jadwal baru yang ditambahkan.</div>
+          <div style="font-weight:600;color:var(--ink2)">Tidak ada maintenance aktif untuk dikerjakan</div>
+          <div class="small muted" style="margin-top:4px">Maintenance yang selesai akan muncul pada riwayat di bawah ini.</div>
+        </td>
+      </tr>
+    @endforelse
+    </tbody>
+  </table>
+</div>
+
+{{-- SECTION 1B: RIWAYAT MAINTENANCE SELESAI --}}
+<div class="card tablewrap" style="margin-bottom:24px;padding:22px">
+  <div class="row between dashboard-section-head" style="margin-bottom:16px;align-items:flex-start">
+    <div class="dashboard-section-title">
+      <div class="dashboard-title-line" style="display:flex;align-items:center;gap:10px">
+        <h2 style="margin:0;font-size:18px">Maintenance yang Sudah Dikerjakan</h2>
+        <span class="chip" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;font-size:11.5px">
+          <span class="chip-dot" style="background:#10b981"></span> Riwayat Selesai
+        </span>
+      </div>
+      <div class="small muted" style="margin-top:4px">Pekerjaan yang telah tuntas dipisahkan dari antrian maintenance periode berikutnya.</div>
+    </div>
+    <a class="btn-action" href="{{ route('manajemen.jadwal.index') }}">
+      <span>Lihat Semua Riwayat â†’</span>
+    </a>
+  </div>
+
+  <table class="dashboard-table">
+    <thead>
+      <tr style="background:#fafaf9">
+        <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Mesin & Lokasi</th>
+        <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Tugas & Siklus</th>
+        <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Selesai Dikerjakan</th>
+        <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Teknisi</th>
+        <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+    @forelse ($completedSchedules as $schedule)
+      <tr>
+        <td style="padding:14px">
+          <div style="font-weight:700;font-size:14px;color:var(--ink)">{{ $schedule->machine->label }}</div>
+          <div class="row" style="gap:6px;margin-top:4px">
+            <span class="badge-code">{{ $schedule->machine->code }}</span>
+            <span class="tiny muted">{{ $schedule->machine->location }}</span>
+          </div>
+        </td>
+        <td style="padding:14px">
+          <div style="font-weight:600;color:var(--ink)">{{ $schedule->task }}</div>
+          <div class="tiny muted" style="margin-top:3px">{{ ucfirst($schedule->type) }}{{ $schedule->interval_label ? ' Â· Siklus '.$schedule->interval_label : '' }}</div>
+        </td>
+        <td style="padding:14px">
+          <div style="font-weight:700;color:var(--ink)">{{ $schedule->completed_at?->translatedFormat('d M Y') ?? '-' }}</div>
+          <div class="tiny muted" style="margin-top:3px">Jadwal awal: {{ $schedule->due_date->translatedFormat('d M Y') }}</div>
+        </td>
+        <td style="padding:14px">{{ $schedule->technician?->name ?? 'Belum ditugaskan' }}</td>
+        <td style="padding:14px">@include('partials.chip', ['v' => 'selesai'])</td>
+      </tr>
+    @empty
+      <tr>
+        <td colspan="5" class="empty" style="padding:36px 20px">
+          <div style="font-weight:600;color:var(--ink2)">Belum ada maintenance yang selesai</div>
+          <div class="small muted" style="margin-top:4px">Riwayat akan tampil otomatis setelah pekerjaan ditandai selesai.</div>
         </td>
       </tr>
     @endforelse
@@ -277,7 +337,7 @@
     </div>
   </div>
 
-  <table style="width:100%;border-collapse:collapse">
+  <table class="dashboard-table">
     <thead>
       <tr style="background:#fafaf9">
         <th style="padding:12px 14px;border-bottom:1px solid var(--line)">Tiket</th>
@@ -379,8 +439,8 @@
 {{-- SECTION 3: BOTTOM WIDGETS (GRAFIK & PENGINGAT WA) --}}
 <div class="grid g2" style="margin-top:24px">
   {{-- Grafik Tren --}}
-  <div class="card" style="padding:22px">
-    <div class="row between" style="margin-bottom:14px;align-items:flex-start">
+  <div class="card dashboard-trend-widget" style="padding:22px">
+    <div class="row between trend-widget-header" style="margin-bottom:14px;align-items:flex-start">
       <div>
         <h3 style="margin:0;font-size:16px">Tren Tiket Perbaikan (6 Bulan Terakhir)</h3>
         <div class="small muted" style="margin-top:4px">Volume laporan kerusakan bulanan dari seluruh area pabrik.</div>
@@ -389,21 +449,46 @@
         Total: {{ $trend->sum('count') }} Tiket
       </span>
     </div>
-    @php $max = max(1, $trend->max('count')); @endphp
-    <div class="bars" style="margin-top:20px;height:160px">
-      @foreach ($trend as $b)
-        <div>
-          <i style="height:{{ max(8, $b['count'] / $max * 100) }}%;transition:all .3s" title="{{ $b['label'] }}: {{ $b['count'] }} tiket">
-            <b>{{ $b['count'] }}</b>
-          </i>
-          <span style="font-weight:600;margin-top:4px">{{ $b['label'] }}</span>
+    @php
+      $totalTrend = $trend->sum('count');
+      $chartColors = ['#e11d48', '#fb7185', '#f59e0b', '#14b8a6', '#6366f1', '#8b5cf6'];
+      $angle = 0;
+      $segments = $trend->values()->map(function ($item, $index) use (&$angle, $totalTrend, $chartColors) {
+          $start = $angle;
+          $angle += $totalTrend ? ($item['count'] / $totalTrend) * 360 : 0;
+
+          return [
+              ...$item,
+              'color' => $chartColors[$index],
+              'start' => $start,
+              'end' => $angle,
+          ];
+      });
+      $chartGradient = $totalTrend
+          ? $segments->map(fn ($segment) => "{$segment['color']} {$segment['start']}deg {$segment['end']}deg")->implode(', ')
+          : '#e2e8f0 0deg 360deg';
+    @endphp
+    <div class="ticket-donut-chart" style="--chart-gradient: conic-gradient({{ $chartGradient }});">
+      <div class="ticket-donut" role="img" aria-label="Distribusi {{ $totalTrend }} tiket perbaikan selama enam bulan terakhir">
+        <div class="ticket-donut__center">
+          <strong>{{ $totalTrend }}</strong>
+          <span>Total tiket</span>
         </div>
-      @endforeach
+      </div>
+      <div class="ticket-donut__legend">
+        @foreach ($segments as $segment)
+          <div class="ticket-donut__legend-item">
+            <span class="ticket-donut__legend-dot" style="--segment-color: {{ $segment['color'] }}"></span>
+            <span>{{ $segment['label'] }}</span>
+            <b>{{ $segment['count'] }}</b>
+          </div>
+        @endforeach
+      </div>
     </div>
   </div>
 
   {{-- Status Otomasi WhatsApp --}}
-  <div class="card" style="padding:22px;display:flex;flex-direction:column;justify-content:space-between">
+  <div class="card dashboard-wa-widget" style="padding:22px;display:flex;flex-direction:column;justify-content:space-between">
     <div>
       <div class="row between" style="margin-bottom:14px;align-items:flex-start">
         <div>

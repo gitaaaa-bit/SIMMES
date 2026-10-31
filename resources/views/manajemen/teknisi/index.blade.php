@@ -1,21 +1,23 @@
 @extends('layouts.manager')
 @section('title', 'Daftar Teknisi')
 @section('content')
-<div class="top" style="align-items:center;margin-bottom:24px">
-  <div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <span class="live-status-pill">
-        <span class="pulse-dot"></span>
-        {{ $technicians->count() }} Teknisi Aktif
-      </span>
-      <span class="tiny muted">Tim Pemeliharaan & Perbaikan Pabrik</span>
+<div class="top">
+  <div class="top-row">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span class="live-status-pill">
+          <span class="pulse-dot"></span>
+          {{ $technicians->count() }} Teknisi Aktif
+        </span>
+        <span class="tiny muted">Tim Pemeliharaan & Perbaikan Pabrik</span>
+      </div>
+      <h1 style="margin:0">Daftar Teknisi</h1>
     </div>
-    <h1 style="margin:0 0 4px">Daftar Teknisi</h1>
-    <p style="margin:0">Pantau beban kerja teknisi dan daftarkan teknisi baru yang dapat langsung aktif bertugas.</p>
+    <a class="btn primary" href="{{ route('manajemen.teknisi.create') }}">
+      @include('partials.icon', ['n' => 'plus']) Daftarkan Teknisi Baru
+    </a>
   </div>
-  <a class="btn primary" href="{{ route('manajemen.teknisi.create') }}">
-    @include('partials.icon', ['n' => 'plus']) Daftarkan Teknisi Baru
-  </a>
+  <p style="margin:0" class="muted small">Pantau beban kerja teknisi dan daftarkan teknisi baru yang dapat langsung aktif bertugas.</p>
 </div>
 
 {{-- Banner Info Akun Baru Jika Baru Saja Ditambahkan --}}
