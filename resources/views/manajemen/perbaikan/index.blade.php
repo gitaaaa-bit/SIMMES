@@ -9,8 +9,8 @@
     </div>
   </div>
 </div>
-<form class="filters" method="GET">
-  <input class="input" name="q" value="{{ request('q') }}" placeholder="Cari kode tiket atau mesin">
+<form class="filters" method="GET" autocomplete="off">
+  <input class="input" name="q" value="{{ request('q') }}" placeholder="Cari kode tiket atau mesin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
   <select class="select" name="status" onchange="this.form.submit()">
     <option value="">Semua status</option>
     @foreach (['dilaporkan','ditugaskan','diproses','selesai','terlambat'] as $s)<option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>@endforeach
@@ -26,7 +26,7 @@
 </form>
 <div class="card tablewrap">
   <table>
-    <thead><tr><th>Kode/Tipe</th><th>Mesin</th><th>Dilaporkan</th><th>Urgensi</th><th>Teknisi</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Kode/Tipe</th><th>Mesin</th><th>Dilaporkan</th><th>Urgensi</th><th>Teknisi</th><th>Status</th><th style="text-align:right">Aksi</th></tr></thead>
     <tbody>
     @forelse ($tickets as $t)
       @php
@@ -72,32 +72,48 @@
           @endif
         </td>
         <td>
-          <div style="display:flex;align-items:center;gap:4px">
+          @include('partials.chip', ['v' => $t->display_status])
+        </td>
+        <td style="text-align:right">
+          <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap">
             <button type="button" 
-                    class="btn-action primary" 
+                    class="btn-icon detail" 
                     data-ticket="{{ json_encode($tPayload) }}" 
                     onclick="openTicketDetail(JSON.parse(this.dataset.ticket))" 
-                    style="padding:4px 9px;font-size:11.5px">
-              @include('partials.icon', ['n' => 'eye']) <span>Detail</span>
+                    title="Buka Ringkasan & Foto">
+              @include('partials.icon', ['n' => 'eye'])
             </button>
-            <a href="{{ route('manajemen.perbaikan.show', $t) }}" class="tiny muted" title="Buka form administrasi penuh" style="padding:2px 4px;font-weight:700">↗</a>
+            <a href="{{ route('manajemen.perbaikan.edit', $t) }}" 
+               class="btn-icon edit" 
+               title="Edit Tiket Perbaikan">
+              @include('partials.icon', ['n' => 'edit'])
+            </a>
+            <form method="POST" action="{{ route('manajemen.perbaikan.destroy', $t) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tiket {{ $t->code }}?');" style="display:inline;margin:0">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn-icon danger" title="Hapus Tiket">
+                @include('partials.icon', ['n' => 'trash'])
+              </button>
+            </form>
+            <a href="{{ route('manajemen.perbaikan.show', $t) }}" class="btn-icon" title="Buka Form Administrasi Penuh">
+              @include('partials.icon', ['n' => 'external'])
+            </a>
             @if ($t->technician?->whatsapp)
               @php
                 $msg = \App\Services\WhatsAppService::buildTicketMessage($t, $t->technician);
                 $wa = \App\Services\WhatsAppService::makeDirectLink($t->technician->whatsapp, $msg);
               @endphp
               @if ($wa)
-                <a href="{{ $wa }}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;margin-left:4px;color:#16a34a" title="Hubungi WA {{ $t->technician->name }}">
-                  <svg class="i" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <a href="{{ $wa }}" target="_blank" rel="noopener noreferrer" class="btn-icon whatsapp" title="Hubungi WA {{ $t->technician->name }}">
+                  @include('partials.icon', ['n' => 'whatsapp'])
                 </a>
               @endif
             @elseif ($t->technician_id === null && $t->status !== 'selesai')
               @php
                 $waBroadcast = \App\Services\WhatsAppService::makeBroadcastShareLink($t);
               @endphp
-              <a href="{{ $waBroadcast }}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;margin-left:4px;color:#16a34a;font-weight:700;font-size:11px" title="Siarkan Notifikasi Perbaikan ke Grup WA Teknisi (Siapa Cepat Dia Dapat)">
-                <svg class="i" style="width:15px;height:15px;margin-right:2px" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                WA
+              <a href="{{ $waBroadcast }}" target="_blank" rel="noopener noreferrer" class="btn-icon whatsapp" title="Siarkan Notifikasi Perbaikan ke Grup WA Teknisi (Siapa Cepat Dia Dapat)">
+                @include('partials.icon', ['n' => 'whatsapp'])
               </a>
             @endif
           </div>

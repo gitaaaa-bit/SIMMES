@@ -3,15 +3,14 @@
 @section('heading', 'Halo, '.explode(' ', auth()->user()->name)[0].' 👋')
 @section('sub', 'Dashboard Teknisi · '.now()->translatedFormat('l, d F Y'))
 @section('content')
-@if ($availableCount > 0)
-<div class="tcard hero" style="background:linear-gradient(135deg,#fff1f3 0%,#ffe4e8 100%);border:1.5px solid var(--r400);margin-bottom:14px;box-shadow:0 8px 20px -8px rgba(220,38,38,0.25)">
-  <div class="row between" style="gap:10px">
-    <div>
+<div id="availableTicketsHero" class="tcard hero" style="background:linear-gradient(135deg,#fff1f3 0%,#ffe4e8 100%);border:1.5px solid var(--r400);margin-bottom:14px;box-shadow:0 8px 20px -8px rgba(220,38,38,0.25);{{ $availableCount > 0 ? '' : 'display:none;' }}">
+  <div class="row between" style="gap:10px;flex-wrap:wrap;align-items:center">
+    <div style="flex:1;min-width:200px">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="chip" style="background:#ea580c;color:#fff;font-size:11px;padding:2px 8px;font-weight:800">⚡ TERBUKA</span>
-        <b style="color:var(--r800);font-size:14.5px">{{ $availableCount }} Laporan Terbuka (Belum Diambil)</b>
+        <b id="availableTicketsCount" style="color:var(--r800);font-size:14.5px">{{ $availableCount }} Laporan Terbuka (Belum Diambil)</b>
       </div>
-      <div class="tiny" style="color:var(--ink2);margin-top:4px">
+      <div id="availableTicketsText" class="tiny" style="color:var(--ink2);margin-top:4px">
         @if (isset($latestAvailable) && $latestAvailable)
           <span>Tiket <b>{{ $latestAvailable->code }}</b> ({{ $latestAvailable->machine?->name ?? 'Mesin' }}) menunggu teknisi.</span>
         @else
@@ -24,7 +23,6 @@
     </a>
   </div>
 </div>
-@endif
 
 <div class="tstats">
   <a class="tstat hot" href="{{ route('teknisi.tugas.index', ['f' => 'belum']) }}"><b>{{ $stats['baru'] }}</b><span>Tugas baru</span></a>
@@ -57,7 +55,7 @@
 </div>
 @endif
 
-<div class="sect"><h2>Tugas prioritas</h2><a class="link small" href="{{ route('teknisi.tugas.index') }}">Semua</a></div>
+<div class="sect"><h2>Tugas Perbaikan Saya</h2><a class="link small" href="{{ route('teknisi.tugas.index') }}">Semua</a></div>
 @forelse ($priority as $t)
   <a class="tcard task {{ $t->urgency }}" href="{{ route('teknisi.tugas.show', $t) }}">
     <div class="t1"><span>{{ $t->code }} · {{ $t->machine->code }}</span>@include('partials.chip', ['v' => $t->display_status])</div>
@@ -65,7 +63,7 @@
     <div class="row between">@include('partials.chip', ['v' => $t->urgency])<div class="progress" style="width:90px"><i style="width:{{ $t->progress }}%"></i></div></div>
   </a>
 @empty
-  <div class="tcard empty">Tidak ada tugas aktif. Santai dulu ☕</div>
+  <div class="tcard empty">Tidak ada tugas perbaikan saat ini.</div>
 @endforelse
 
 <div class="sect"><h2>Jadwal maintenance saya</h2><a class="link small" href="{{ route('teknisi.jadwal') }}">Semua</a></div>
@@ -78,7 +76,7 @@
       </div>
       @include('partials.chip', ['v' => $s->display_status])
     </div>
-  @empty <div class="empty">Belum ada jadwal.</div> @endforelse
+  @empty <div class="empty">Belum ada jadwal maintenance.</div> @endforelse
 </div>
 
 <div class="sect"><h2>Aktivitas 7 hari</h2></div>

@@ -124,14 +124,26 @@
         </td>
         <td>@include('partials.chip', ['v' => $s->display_status])</td>
         <td style="text-align:right">
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px">
-            <button type="button" class="btn-action primary" data-schedule="{{ json_encode($sPayload) }}" onclick="openScheduleDetail(JSON.parse(this.dataset.schedule))" style="padding:4px 9px;font-size:11.5px">
-              @include('partials.icon', ['n' => 'eye']) <span>Detail</span>
+          <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap">
+            <button type="button" class="btn-icon detail" data-schedule="{{ json_encode($sPayload) }}" onclick="openScheduleDetail(JSON.parse(this.dataset.schedule))" title="Lihat Detail Jadwal">
+              @include('partials.icon', ['n' => 'eye'])
             </button>
-            <a href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}" class="tiny muted" title="Lihat profil mesin lengkap" style="padding:2px 4px;font-weight:700">↗</a>
+            <a href="{{ route('manajemen.jadwal.edit', $s) }}" class="btn-icon edit" title="Edit Jadwal">
+              @include('partials.icon', ['n' => 'edit'])
+            </a>
+            <form method="POST" action="{{ route('manajemen.jadwal.destroy', $s) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus jadwal ini?');" style="display:inline;margin:0">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn-icon danger" title="Hapus Jadwal">
+                @include('partials.icon', ['n' => 'trash'])
+              </button>
+            </form>
+            <a href="{{ route('manajemen.mesin.show', [$s->machine, 'from' => 'jadwal']) }}" class="btn-icon" title="Lihat Profil Mesin Lengkap">
+              @include('partials.icon', ['n' => 'external'])
+            </a>
             @if ($schedWaLink)
-              <a href="{{ $schedWaLink }}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;margin-left:4px;color:#16a34a" title="Kirim Notifikasi Jadwal Maintenance via WA ke {{ $tech->name }}">
-                <svg class="i" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              <a href="{{ $schedWaLink }}" target="_blank" rel="noopener noreferrer" class="btn-icon whatsapp" title="Kirim Notifikasi Jadwal Maintenance via WA ke {{ $tech->name }}">
+                @include('partials.icon', ['n' => 'whatsapp'])
               </a>
             @endif
           </div>

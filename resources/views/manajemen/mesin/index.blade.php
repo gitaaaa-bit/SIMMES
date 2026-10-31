@@ -13,8 +13,8 @@
     </div>
   </div>
 </div>
-<form class="filters" method="GET">
-  <input class="input" name="q" value="{{ request('q') }}" placeholder="Cari mesin">
+<form class="filters" method="GET" autocomplete="off">
+  <input class="input" name="q" value="{{ request('q') }}" placeholder="Cari mesin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
   <select class="select" name="location" onchange="this.form.submit()">
     <option value="">Semua lokasi</option>
     @foreach ($locations as $l)<option @selected(request('location') === $l)>{{ $l }}</option>@endforeach
@@ -26,17 +26,29 @@
 </form>
 <div class="card tablewrap">
   <table>
-    <thead><tr><th>Kode</th><th>Nama mesin</th><th>Lokasi</th><th>Servis terakhir</th><th>Status</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Kode</th><th>Nama mesin</th><th>Lokasi</th><th>Servis terakhir</th><th>Status</th><th style="text-align:right">Aksi</th></tr></thead>
     <tbody>
     @forelse ($machines as $m)
       <tr>
         <td><b>{{ $m->code }}</b></td><td>{{ $m->name }}</td><td>{{ $m->location }}</td>
         <td>{{ $m->last_service_at?->translatedFormat('d M Y') ?? '-' }}</td>
         <td>@include('partials.chip', ['v' => $m->status])</td>
-        <td class="row">
-          <a class="link" href="{{ route('manajemen.mesin.edit', $m) }}">edit</a>
-          <a class="link" href="{{ route('manajemen.mesin.show', $m) }}">detail</a>
-          <form method="POST" action="{{ route('manajemen.mesin.destroy', $m) }}" onsubmit="return confirm('Hapus {{ $m->code }}?')">@csrf @method('DELETE')<button class="link danger">hapus</button></form>
+        <td style="text-align:right">
+          <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:6px">
+            <a class="btn-icon detail" href="{{ route('manajemen.mesin.show', $m) }}" title="Lihat detail mesin">
+              @include('partials.icon', ['n' => 'eye'])
+            </a>
+            <a class="btn-icon edit" href="{{ route('manajemen.mesin.edit', $m) }}" title="Edit data mesin">
+              @include('partials.icon', ['n' => 'edit'])
+            </a>
+            <form method="POST" action="{{ route('manajemen.mesin.destroy', $m) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus mesin {{ $m->code }} ({{ $m->name }})?');" style="display:inline;margin:0">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn-icon danger" title="Hapus data mesin">
+                @include('partials.icon', ['n' => 'trash'])
+              </button>
+            </form>
+          </div>
         </td>
       </tr>
     @empty

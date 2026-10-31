@@ -233,4 +233,57 @@ class ScheduleController extends Controller
         $out = trim(\Illuminate\Support\Facades\Artisan::output());
         return back()->with('ok', 'Pengecekan pengingat jadwal berhasil dijalankan' . ($out ? ": {$out}" : '.'));
     }
+
+    public function show(MaintenanceSchedule $jadwal)
+    {
+        return redirect()->route('manajemen.jadwal.edit', $jadwal);
+    }
+
+    public function edit(MaintenanceSchedule $jadwal)
+    {
+        $jadwal->load(['machine', 'technician']);
+        $machines = Machine::orderBy('category')->orderBy('name')->get(['id', 'code', 'name', 'category', 'model', 'location']);
+        $technicians = User::where('role', 'teknisi')->where('status', 'aktif')->orderBy('name')->get();
+
+        return view('manajemen.jadwal.edit', compact('jadwal', 'machines', 'technicians'));
+    }
+
+    public function update(Request $r, MaintenanceSchedule $jadwal)
+    {
+        $data = $r->validate([
+            'machine_id'      => 'required|exists:machines,id',
+            'task'            => 'required|string|max:120',
+            'type'            => 'required|in:rutin,insiden',
+            'interval_months' => 'nullable|integer|min:1|max:60',
+            'due_date'        => 'required|date',
+            'due_time'        => 'nullable|string|max:8',
+            'technician_id'   => 'nullable|exists:users,id',
+            'status'          => 'required|in:terjadwal,dikerjakan,selesai',
+            'progress'        => 'nullable|integer|min:0|max:100',
+            'spareparts'      => 'nullable|string|max:255',
+        ]);
+
+        $data['interval_label'] = !empty($data['interval_months']) ? $data['interval_months'] . ' bulan' : null;
+
+        if ($data['status'] === 'selesai' && $jadwal->status !== 'selesai') {
+            $data['completed_at'] = now();
+            $data['progress'] = 100;
+            $jadwal->machine->update(['last_service_at' => now()]);
+        } elseif ($data['status'] !== 'selesai' && $jadwal->status === 'selesai') {
+            $data['completed_at'] = null;
+        }
+
+        $jadwal->update($data);
+
+        return redirect()->route('manajemen.jadwal.index')
+            ->with('ok', "Jadwal maintenance mesin {$jadwal->machine->label} berhasil diperbarui.");
+    }
+
+    public function destroy(MaintenanceSchedule $jadwal)
+    {
+        $task = $jadwal->task;
+        $jadwal->delete();
+
+        return back()->with('ok', "Jadwal maintenance '{$task}' berhasil dihapus.");
+    }
 }

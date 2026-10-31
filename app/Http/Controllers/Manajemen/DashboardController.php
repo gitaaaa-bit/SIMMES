@@ -16,7 +16,7 @@ class DashboardController extends Controller
         $stats = [
             'aktif'      => Machine::where('status', 'aktif')->count(),
             'diperbaiki' => Ticket::where('status', 'diproses')->count(),
-            'menunggu'   => Ticket::whereIn('status', ['dilaporkan', 'ditugaskan'])->count(),
+            'menunggu'   => Ticket::whereNull('technician_id')->where('status', '!=', 'selesai')->count(),
             'terlambat'  => (clone $open)->whereNotNull('due_at')->where('due_at', '<', now())->count(),
         ];
 

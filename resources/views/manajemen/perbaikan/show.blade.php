@@ -19,7 +19,20 @@
 @endphp
 <div class="top">
   <div><h1>{{ $ticket->code }}</h1><p>{{ $ticket->machine->label }} · {{ $ticket->machine->location }}</p></div>
-  <div class="actions">@include('partials.chip', ['v' => $ticket->display_status])<a class="btn" href="{{ $backUrl }}">← Kembali</a></div>
+  <div class="actions">
+    @include('partials.chip', ['v' => $ticket->display_status])
+    <a class="btn" href="{{ route('manajemen.perbaikan.edit', $ticket) }}" style="color:#0284c7;border-color:#bae6fd">
+      @include('partials.icon', ['n' => 'edit']) Edit Tiket
+    </a>
+    <form method="POST" action="{{ route('manajemen.perbaikan.destroy', $ticket) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tiket {{ $ticket->code }}?');" style="display:inline;margin:0">
+      @csrf
+      @method('DELETE')
+      <button type="submit" class="btn" style="color:#e11d48;border-color:#fecdd3">
+        @include('partials.icon', ['n' => 'trash']) Hapus
+      </button>
+    </form>
+    <a class="btn" href="{{ $backUrl }}">← Kembali</a>
+  </div>
 </div>
 
 @if (session('wa_link'))

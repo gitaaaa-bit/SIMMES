@@ -1,23 +1,26 @@
 @extends('layouts.manager')
-@php($editing = isset($user))
+@php
+  $editing = isset($user) && $user->exists;
+  $currentRole = old('role', $editing ? ($user->role instanceof \App\Enums\Role ? $user->role->value : $user->role) : 'teknisi');
+  $backRoute = (request('from') === 'teknisi' || ($editing && $currentRole === 'teknisi'))
+      ? route('manajemen.teknisi.index')
+      : route('manajemen.pengguna.index');
+@endphp
 @section('title', $editing ? 'Ubah Pengguna' : 'Tambah Pengguna')
 @section('content')
 <div style="max-width:680px;margin:0 auto">
   <div class="top">
     <div class="top-row">
       <h1>{{ $editing ? 'Ubah Data Pengguna' : 'Tambah Pengguna' }}</h1>
-      @php
-        $backRoute = (request('from') === 'teknisi' || (isset($user) && $user->role === 'teknisi')) ? route('manajemen.teknisi.index') : route('manajemen.pengguna.index');
-      @endphp
       <a class="btn" href="{{ $backRoute }}">&larr; Kembali</a>
     </div>
-    <p class="muted small">{{ $editing ? 'Perbarui penempatan, departemen, kontak, dan data kerja pengguna.' : 'NIK dan kata sandi awal otomatis dibuat jika dikosongkan.' }}</p>
+    <p class="muted small">{{ $editing ? 'Perbarui penempatan, departemen, kontak, dan data kerja pengguna.' : 'NIK diisi manual oleh manajemen sesuai ketentuan perusahaan.' }}</p>
   </div>
 
   <form class="card" style="width:100%;margin:0 auto" method="POST" action="{{ $editing ? route('manajemen.pengguna.update', $user) : route('manajemen.pengguna.store') }}">
     @csrf
     @if ($editing) @method('PUT') @endif
-    @if (request('from') || (isset($user) && $user->role === 'teknisi'))
+    @if (request('from') || ($editing && $currentRole === 'teknisi'))
       <input type="hidden" name="from" value="{{ request('from', 'teknisi') }}">
     @endif
 
@@ -26,18 +29,18 @@
     @error('name')<div class="err">{{ $message }}</div>@enderror
 
     <label class="f">Peran</label>
-    @php($currentRole = old('role', isset($user) ? ($user->role instanceof \App\Enums\Role ? $user->role->value : $user->role) : 'teknisi'))
     <select class="select" name="role">
       <option value="teknisi" @selected($currentRole === 'teknisi')>Teknisi</option>
       <option value="manajemen" @selected($currentRole === 'manajemen')>Manager</option>
     </select>
+    @error('role')<div class="err">{{ $message }}</div>@enderror
 
-    <label class="f">NIK <span class="muted small" style="font-weight:normal">{{ $editing ? '(wajib)' : '(opsional - otomatis jika dikosongkan)' }}</span></label>
-    <input class="input" name="nik" value="{{ old('nik', $user->nik ?? '') }}" placeholder="" {{ $editing ? 'required' : '' }}>
+    <label class="f">NIK <span class="muted small" style="font-weight:normal">(wajib, diisi manual)</span></label>
+    <input class="input" name="nik" value="{{ old('nik', $user->nik ?? '') }}" placeholder="Contoh: TEK011" required>
     @error('nik')<div class="err">{{ $message }}</div>@enderror
 
-    <label class="f">Kata Sandi <span class="muted small" style="font-weight:normal">{{ $editing }}</span></label>
-    <input class="input" type="text" name="password" value="" placeholder="Minimal 4 karakter">
+    <label class="f">Kata Sandi <span class="muted small" style="font-weight:normal">{{ $editing ? '(kosongkan jika tidak diubah)' : '(wajib)' }}</span></label>
+    <input class="input" type="text" name="password" value="" placeholder="Minimal 4 karakter" {{ $editing ? '' : 'required' }}>
     @error('password')<div class="err">{{ $message }}</div>@enderror
 
     <label class="f">Email (Akun Login)</label>
@@ -46,6 +49,7 @@
 
     <label class="f">Departemen</label>
     <input class="input" name="department" value="{{ old('department', $user->department ?? 'Maintenance') }}" placeholder="Maintenance / Produksi" required>
+    @error('department')<div class="err">{{ $message }}</div>@enderror
 
     <label class="f">Bagian / Spesialisasi</label>
     <input class="input" name="bagian" value="{{ old('bagian', $user->bagian ?? '') }}" placeholder="">
@@ -55,10 +59,10 @@
 
     <label class="f">Lokasi Penempatan Kerja</label>
     <input class="input" name="work_location" value="{{ old('work_location', $user->work_location ?? '') }}" placeholder="">
-    <div class="tiny muted" style="margin-top:4px"></div>
 
     <label class="f">Nomor WhatsApp</label>
     <input class="input" name="whatsapp" value="{{ old('whatsapp', $user->whatsapp ?? '') }}" placeholder="Contoh: 081234567890 atau 6281234567890">
+    @error('whatsapp')<div class="err">{{ $message }}</div>@enderror
     <div class="tiny muted" style="margin-top:4px">Nomor WhatsApp teknisi untuk menerima broadcast notifikasi perbaikan mesin & tugas secara otomatis.</div>
 
     <div class="form-actions-end" style="display:flex;justify-content:flex-end;margin-top:22px">

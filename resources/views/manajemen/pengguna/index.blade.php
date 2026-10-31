@@ -39,11 +39,21 @@
       <td>{{ $u->whatsapp ?? '-' }}</td>
       <td>{{ ($u->role === 'manajemen' || $u->role === \App\Enums\Role::Manajemen) ? 'Manager' : ucfirst($u->role instanceof \App\Enums\Role ? $u->role->value : $u->role) }}</td>
       <td>@include('partials.chip', ['v' => 'aktif'])</td>
-      <td style="text-align:right;white-space:nowrap">
-        <a class="link" href="{{ route('manajemen.pengguna.edit', $u) }}">Ubah</a>
-        @if (!$u->is(auth()->user()))
-          <form method="POST" action="{{ route('manajemen.pengguna.destroy', $u) }}" style="display:inline" onsubmit="return confirm('Hapus pengguna {{ $u->name }}?');">@csrf @method('DELETE')<button class="link danger" type="submit" style="margin-left:10px">Hapus</button></form>
-        @endif
+      <td style="text-align:right">
+        <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:6px">
+          <a class="btn-icon edit" href="{{ route('manajemen.pengguna.edit', $u) }}" title="Ubah Data Pengguna">
+            @include('partials.icon', ['n' => 'edit'])
+          </a>
+          @if (!$u->is(auth()->user()))
+            <form method="POST" action="{{ route('manajemen.pengguna.destroy', $u) }}" style="display:inline;margin:0" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna {{ $u->name }}?');">
+              @csrf
+              @method('DELETE')
+              <button class="btn-icon danger" type="submit" title="Hapus Pengguna">
+                @include('partials.icon', ['n' => 'trash'])
+              </button>
+            </form>
+          @endif
+        </div>
       </td>
     </tr>
   @empty <tr><td colspan="8" class="empty">Belum ada pengguna aktif.</td></tr> @endforelse

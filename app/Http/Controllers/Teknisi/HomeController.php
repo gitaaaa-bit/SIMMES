@@ -21,13 +21,17 @@ class HomeController extends Controller
             'terlambat' => (clone $mine)->where('status', '!=', 'selesai')->whereNotNull('due_at')->where('due_at', '<', now())->count(),
         ];
 
-        // tugas prioritas: urgensi tinggi & batas waktu terdekat
-        $priority = Ticket::with('machine')->where('technician_id', $u->id)->where('status', '!=', 'selesai')
-            ->orderByRaw("case urgency when 'tinggi' then 0 when 'sedang' then 1 else 2 end")
-            ->orderBy('due_at')->take(3)->get();
+        // Tugas perbaikan saya: tugas yang baru di-acc/diambil berada di paling atas, yang selesai turun ke bawah
+        $priority = Ticket::with('machine')->where('technician_id', $u->id)
+            ->orderByRaw("CASE WHEN status = 'selesai' THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN status = 'selesai' THEN finished_at ELSE COALESCE(started_at, updated_at, created_at) END DESC")
+            ->take(6)->get();
 
+        // Jadwal maintenance saya: yang aktif/baru di-acc berada di atas, yang selesai turun ke bawah
         $schedules = MaintenanceSchedule::with('machine')->where('technician_id', $u->id)
-            ->where('status', '!=', 'selesai')->orderBy('due_date')->take(4)->get();
+            ->orderByRaw("CASE WHEN status = 'selesai' THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN status = 'selesai' THEN COALESCE(completed_at, updated_at) ELSE updated_at END DESC")
+            ->take(6)->get();
 
         $recent = Ticket::with('machine')->where('technician_id', $u->id)->where('status', 'selesai')
             ->latest('finished_at')->take(3)->get();

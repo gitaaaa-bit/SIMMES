@@ -1,7 +1,7 @@
 <button type="button" class="btn primary" onclick="openQuickMachineModal()">@include('partials.icon', ['n' => 'plus']) Tambah Mesin</button>
 
 <div id="quickMachineModal" class="quick-modal-backdrop" onclick="if(event.target===this) closeQuickMachineModal()">
-  <form method="POST" action="{{ route('manajemen.mesin.store') }}" enctype="multipart/form-data" class="quick-modal-card" style="width:min(680px, 100%)" onclick="event.stopPropagation()">
+  <form method="POST" action="{{ route('manajemen.mesin.store') }}" enctype="multipart/form-data" class="quick-modal-card" style="width:min(680px, 100%)" onclick="event.stopPropagation()" autocomplete="off">
     @csrf
     <div style="padding:18px 24px 14px;background:#fff6f7;border-bottom:1px solid var(--rose200);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>

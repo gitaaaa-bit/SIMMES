@@ -30,6 +30,9 @@
   <div><h1>Detail Mesin</h1><p>{{ $machine->label }}</p></div>
   <div class="actions">
     @if ($machine->needs_service)<span class="chip c-diproses">Perlu servis</span>@endif
+    <a class="btn" href="{{ route('manajemen.mesin.edit', $machine) }}" style="color:#0284c7;border-color:#bae6fd">
+      @include('partials.icon', ['n' => 'edit']) Edit Mesin
+    </a>
     <a class="btn" href="{{ $backUrl }}">← Kembali</a>
   </div>
 </div>

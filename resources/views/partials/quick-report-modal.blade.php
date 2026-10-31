@@ -1,7 +1,11 @@
-<button type="button" class="btn primary" onclick="openQuickReportModal()">@include('partials.icon', ['n' => 'plus']) Lapor</button>
+@if (!isset($hideTrigger) || !$hideTrigger)
+<button type="button" class="{{ $triggerClass ?? 'btn primary' }}" onclick="openQuickReportModal()">
+  @include('partials.icon', ['n' => 'plus']) <span>{{ $triggerLabel ?? 'Lapor' }}</span>
+</button>
+@endif
 
 <div id="quickReportModal" class="quick-modal-backdrop" onclick="if(event.target===this) closeQuickReportModal()">
-  <form method="POST" action="{{ route('manajemen.lapor.store') }}" enctype="multipart/form-data" class="quick-modal-card" style="width:min(580px, 100%)" onclick="event.stopPropagation()">
+  <form method="POST" action="{{ route('manajemen.lapor.store') }}" enctype="multipart/form-data" class="quick-modal-card" style="width:min(580px, 100%)" onclick="event.stopPropagation()" autocomplete="off">
     @csrf
     <div style="padding:18px 24px 14px;background:#fff6f7;border-bottom:1px solid var(--rose200);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
@@ -9,7 +13,7 @@
           <span class="chip-dot" style="width:8px;height:8px;background:var(--r700)"></span>
           <h3 id="quickReportTitle" style="margin:0;font-size:17px;font-weight:800">Lapor Kerusakan</h3>
         </div>
-        <span class="tiny muted">Buat laporan baru tanpa meninggalkan halaman Perbaikan.</span>
+        <span class="tiny muted">Buat laporan baru tanpa meninggalkan halaman.</span>
       </div>
       <button type="button" onclick="closeQuickReportModal()" aria-label="Tutup form laporan" style="width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer;font-size:16px;display:grid;place-items:center;line-height:1">×</button>
     </div>
@@ -17,17 +21,17 @@
     <div style="padding:20px 24px;display:grid;gap:14px">
       <div style="position:relative">
         <label class="f" style="margin:0 0 6px">Nama Mesin <span style="color:var(--r600)">*</span></label>
-        <input class="input" name="machine_name" id="quick_machine_name" value="{{ old('machine_name') }}" placeholder="Ketik nama mesin (misal: AC, Press, Pompa)..." autocomplete="off" required>
+        <input class="input" name="machine_name" id="quick_machine_name" value="{{ old('machine_name') }}" placeholder="Ketik nama mesin (misal: AC, Press, Pompa)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" required>
         <div id="quick_machine_results" class="quick-suggest-popup" style="display:none"></div>
       </div>
       <div class="grid g2" style="gap:12px">
         <div>
           <label class="f" style="margin:0 0 6px">Kode Mesin</label>
-          <input class="input" name="machine_code" id="quick_machine_code" value="{{ old('machine_code') }}" placeholder="Opsional">
+          <input class="input" name="machine_code" id="quick_machine_code" value="{{ old('machine_code') }}" placeholder="Opsional" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
         </div>
         <div>
           <label class="f" style="margin:0 0 6px">Lokasi</label>
-          <input class="input" name="location" id="quick_location" value="{{ old('location') }}" placeholder="Opsional">
+          <input class="input" name="location" id="quick_location" value="{{ old('location') }}" placeholder="Opsional" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
         </div>
       </div>
       <div>

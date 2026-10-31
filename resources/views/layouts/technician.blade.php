@@ -11,7 +11,7 @@
   <title>@yield('title', 'Teknisi') · SIMMES</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('css/simmes.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/simmes.css') }}?v={{ filemtime(public_path('css/simmes.css')) }}">
   <style>
     .nav-task-badge {
       position: absolute;
@@ -158,6 +158,55 @@
         }
       }
 
+      // Update pill count di halaman tugas jika ada
+      const pillCount = document.getElementById('availablePillCount');
+      if (pillCount) {
+        pillCount.textContent = count;
+      }
+
+      // Update banner hero di Beranda / Dashboard Teknisi
+      const homeHero = document.getElementById('availableTicketsHero');
+      if (homeHero) {
+        if (count > 0 && data.latest) {
+          homeHero.style.display = 'block';
+          const countEl = document.getElementById('availableTicketsCount');
+          if (countEl) countEl.textContent = `${count} Laporan Terbuka (Belum Diambil)`;
+          const textEl = document.getElementById('availableTicketsText');
+          if (textEl) textEl.innerHTML = `Tiket <b>${data.latest.code}</b> (${data.latest.machine}) menunggu teknisi.`;
+        } else {
+          homeHero.style.display = 'none';
+        }
+      }
+
+      // Update banner hero di Halaman Tugas
+      const tasksHero = document.getElementById('availableTasksHero');
+      if (tasksHero) {
+        const isTersedia = new URLSearchParams(window.location.search).get('f') === 'tersedia';
+        if (count > 0 && !isTersedia) {
+          tasksHero.style.display = 'block';
+          const heroText = document.getElementById('availableTasksHeroText');
+          if (heroText) heroText.textContent = `⚡ Ada ${count} tugas belum diambil teknisi`;
+        } else {
+          tasksHero.style.display = 'none';
+        }
+      }
+
+      // Jika sedang berada di tab filter "tersedia", otomatis hilangkan kartu tiket yang sudah diambil teknisi
+      const isTersediaTab = new URLSearchParams(window.location.search).get('f') === 'tersedia';
+      if (isTersediaTab) {
+        document.querySelectorAll('[data-available-ticket-id]').forEach(el => {
+          const tid = parseInt(el.getAttribute('data-available-ticket-id'), 10);
+          if (!openIds.includes(tid)) {
+            el.remove();
+          }
+        });
+        const remainingCards = document.querySelectorAll('[data-available-ticket-id]');
+        const emptyState = document.getElementById('emptyTersediaState');
+        if (remainingCards.length === 0 && emptyState) {
+          emptyState.style.display = 'block';
+        }
+      }
+
       // 1. KETIKA TIKET SUDAH DIAMBIL: Tutup notifikasi di layar ponsel secara otomatis
       activePhoneNotifications.forEach((notifObj, ticketId) => {
         if (!openIds.includes(ticketId) || count === 0) {
@@ -182,6 +231,11 @@
   // Inisialisasi awal & polling berkala setiap 15 detik
   syncAlerts();
   setInterval(syncAlerts, 15000);
+
+  // Otomatis sinkronisasi saat kembali dari navigasi riwayat / BFCache
+  window.addEventListener('pageshow', function() {
+    syncAlerts();
+  });
 })();
 </script>
 

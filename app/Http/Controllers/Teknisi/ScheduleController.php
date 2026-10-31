@@ -11,7 +11,9 @@ class ScheduleController extends Controller
     public function index()
     {
         $schedules = MaintenanceSchedule::with('machine')->where('technician_id', auth()->id())
-            ->orderByRaw("status = 'selesai'")->orderBy('due_date')->get();
+            ->orderByRaw("CASE WHEN status = 'selesai' THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN status = 'selesai' THEN COALESCE(completed_at, updated_at) ELSE updated_at END DESC")
+            ->get();
         return view('teknisi.jadwal', compact('schedules'));
     }
 

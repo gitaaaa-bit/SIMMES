@@ -17,7 +17,7 @@ class TaskController extends Controller
         if ($filter === 'tersedia') {
             $q = Ticket::with('machine')->whereNull('technician_id')->where('status', '!=', 'selesai')->latest();
         } else {
-            $q = Ticket::with('machine')->where('technician_id', auth()->id())->latest();
+            $q = Ticket::with('machine')->where('technician_id', auth()->id());
 
             match ($filter) {
                 'belum'   => $q->whereIn('status', ['ditugaskan', 'dilaporkan']),
@@ -25,6 +25,9 @@ class TaskController extends Controller
                 'selesai' => $q->where('status', 'selesai'),
                 default   => null,
             };
+
+            $q->orderByRaw("CASE WHEN status = 'selesai' THEN 1 ELSE 0 END ASC")
+              ->orderByRaw("CASE WHEN status = 'selesai' THEN finished_at ELSE COALESCE(started_at, updated_at, created_at) END DESC");
         }
 
         if ($s = $r->q) {
@@ -66,6 +69,14 @@ class TaskController extends Controller
             'started_at'    => $ticket->started_at ?? now(),
         ]);
         $ticket->machine->update(['status' => 'diproses']);
+
+        // Update jadwal maintenance jika tiket ini terhubung dengan jadwal
+        \App\Models\MaintenanceSchedule::where('ticket_id', $ticket->id)
+            ->update([
+                'technician_id' => auth()->id(),
+                'status'        => 'dikerjakan',
+            ]);
+
         $ticket->log('Diambil', auth()->user()->name . ' (Klaim Mandiri)');
         $ticket->recalcProgress();
 

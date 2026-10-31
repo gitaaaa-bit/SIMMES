@@ -21,7 +21,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [M\DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('perbaikan', [M\TicketController::class, 'index'])->name('perbaikan.index');
+        Route::get('perbaikan/baru', [M\TicketController::class, 'create'])->name('perbaikan.create');
+        Route::post('perbaikan', [M\TicketController::class, 'store'])->name('perbaikan.store');
         Route::get('perbaikan/{ticket}', [M\TicketController::class, 'show'])->name('perbaikan.show')->whereNumber('ticket');
+        Route::get('perbaikan/{ticket}/edit', [M\TicketController::class, 'edit'])->name('perbaikan.edit')->whereNumber('ticket');
+        Route::put('perbaikan/{ticket}', [M\TicketController::class, 'update'])->name('perbaikan.update')->whereNumber('ticket');
+        Route::delete('perbaikan/{ticket}', [M\TicketController::class, 'destroy'])->name('perbaikan.destroy')->whereNumber('ticket');
         Route::post('perbaikan/{ticket}/tugaskan', [M\TicketController::class, 'assign'])->name('perbaikan.assign');
         Route::post('perbaikan/{ticket}/kirim-wa', [M\TicketController::class, 'notifyWa'])->name('perbaikan.notifyWa');
         Route::post('perbaikan/{ticket}/siarkan-wa', [M\TicketController::class, 'broadcastWa'])->name('perbaikan.broadcastWa');
@@ -43,6 +48,9 @@ Route::middleware('auth')->group(function () {
         Route::get('jadwal/baru', [M\ScheduleController::class, 'create'])->name('jadwal.create');
         Route::post('jadwal', [M\ScheduleController::class, 'store'])->name('jadwal.store');
         Route::get('jadwal/{jadwal}', [M\ScheduleController::class, 'show'])->name('jadwal.show')->whereNumber('jadwal');
+        Route::get('jadwal/{jadwal}/edit', [M\ScheduleController::class, 'edit'])->name('jadwal.edit')->whereNumber('jadwal');
+        Route::put('jadwal/{jadwal}', [M\ScheduleController::class, 'update'])->name('jadwal.update')->whereNumber('jadwal');
+        Route::delete('jadwal/{jadwal}', [M\ScheduleController::class, 'destroy'])->name('jadwal.destroy')->whereNumber('jadwal');
         Route::post('jadwal/{jadwal}/tugaskan', [M\ScheduleController::class, 'assign'])->name('jadwal.assign');
         Route::post('jadwal/{jadwal}/kirim-wa', [M\ScheduleController::class, 'notifyWa'])->name('jadwal.notifyWa');
         Route::post('jadwal/{jadwal}/tiket', [M\ScheduleController::class, 'makeTicket'])->name('jadwal.tiket');
